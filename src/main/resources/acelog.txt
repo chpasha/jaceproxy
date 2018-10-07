@@ -1,0 +1,44 @@
+ >>> HELLOBG version=3
+ <<< HELLOTS version=3.1.16 version_code=3011600 key=191f7f55a9 http_port=6878 bmode=0
+ >>> READY key=n51LvQoTlJzNGaFxseRK-1e65ed7ed29d8147528790327fecd5931420e281
+ <<< AUTH 0
+ >>> SETOPTIONS use_stop_notifications=1
+ >>> LOADASYNC 96367 TORRENT http://91.92.66.82/trash/ttv-list/acelive/ttv_1016_all.acelive 0 0 0
+ <<< STATUS main:loading
+, "infohash": "45f63d30779b7c8859576b12a05317d16e73404c", "checksum": "8f379924f4c91df00c03e83ccf905891c6aeb981"}
+ Create a broadcast "Матч ТВ HD"
+ >>> START TORRENT http://91.92.66.82/trash/ttv-list/acelive/ttv_1016_all.acelive 0 0 0 0 0 output_format=http
+ <<< STATUS main:idle
+ <<< STATE 1
+ <<< STATUS main:starting
+ <<< STATUS main:prebuf;0;0;0;0;31;0;0;42;0;49152;0;0
+ <<< STATUS main:prebuf;9;0;0;0;1476;0;0;45;0;3850240;0;0
+ <<< STATUS main:prebuf;18;0;0;0;1908;0;0;43;0;6963200;0;0
+ <<< START http://127.0.0.1:6878/content/45f63d30779b7c8859576b12a05317d16e73404c/0.422266696531 stream=1
+ Broadcast "Матч ТВ HD" created
+ Streaming "Матч ТВ HD" to 192.168.9.105 started
+ Sending HTTPAceProxy headers to client: {'Transfer-Encoding': 'chunked', 'Connection': 'Keep-Alive', 'Content-Type': 'application/octet-stream', 'Accept-Ranges': 'none', 'Keep-Alive': 'timeout=15, max=100'}
+ <<< STATE 2
+ Start StreamReader for url: http://127.0.0.1:6878/content/45f63d30779b7c8859576b12a05317d16e73404c/0.422266696531
+ >>> EVENT play 
+ <<< STATUS main:dl;0;0;2257;0;0;42;0;10584064;0;0
+ <<< EVENT livepos last=1538932299 live_first=1538930499 pos=1538932299 first_ts=1538930499 last_ts=1538932299 is_live=1 live_last=1538932299 buffer_pieces=15
+ <<< STATUS main:dl;0;0;2673;0;1;43;0;15335424;0;16384
+ <<< EVENT livepos last=1538932300 live_first=1538930500 pos=1538932292 first_ts=1538930500 last_ts=1538932300 is_live=1 live_last=1538932300 buffer_pieces=15
+ <<< STATUS main:dl;0;0;2663;0;1;43;0;18055168;0;16384
+ <<< EVENT livepos last=1538932301 live_first=1538930501 pos=1538932292 first_ts=1538930501 last_ts=1538932301 is_live=1 live_last=1538932301 buffer_pieces=15
+ <<< STATUS main:dl;0;0;2672;0;4;44;0;20905984;0;49152
+ <<< EVENT livepos last=1538932302 live_first=1538930502 pos=1538932292 first_ts=1538930502 last_ts=1538932302 is_live=1 live_last=1538932302 buffer_pieces=15
+ <<< PAUSE
+ >>> EVENT pause 
+ <<< STATE 3
+ <<< RESUME
+ >>> EVENT play 
+ <<< STATE 2
+ Streaming "Матч ТВ HD" to 192.168.9.105 finished
+ >>> STOP
+ <<< STATUS main:dl;0;0;2729;0;3;44;0;24199168;0;49152
+ <<< EVENT livepos last=1538932303 live_first=1538930503 pos=1538932298 first_ts=1538930503 last_ts=1538932303 is_live=1 live_last=1538932303 buffer_pieces=15
+ <<< STATE 0
+ Broadcast "Матч ТВ HD" stoped. Last client disconnected
+ <<< STATUS main:idle
