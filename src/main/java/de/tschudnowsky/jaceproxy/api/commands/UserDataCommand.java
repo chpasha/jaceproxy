@@ -14,7 +14,7 @@ public class UserDataCommand extends CommandImpl {
 
     public static final String FAKE_DATA = "[{\"gender\": 1}, {\"age\": 5}]";
 
-    private String fakeData = FAKE_DATA;
+    private String data = FAKE_DATA;
 
     public UserDataCommand() {
         super("USERDATA");

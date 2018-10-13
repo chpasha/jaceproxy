@@ -13,7 +13,7 @@ public class UserDataCommandMapper implements CommandMapper<UserDataCommand> {
     public CharSequence writeAsString(UserDataCommand command) {
         return new StringBuilder(command.getName())
                 .append(PROPERTY_SEPARATOR)
-                .append(command.getFakeData())
+                .append(command.getData())
                 .toString();
     }
 }
