@@ -16,6 +16,7 @@ public class CommandMapperFactory {
         {
             put(HelloCommand.class, new HelloCommandMapper());
             put(ReadyCommand.class, new ReadyCommandMapper());
+            put(UserDataCommand.class, new UserDataCommandMapper());
         }
     };
 
