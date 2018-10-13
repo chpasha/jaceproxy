@@ -51,20 +51,17 @@ public class Handshake extends SimpleChannelInboundHandler<Event> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Event event) throws Exception {
-        log.info(event.toString());
-
         if (event instanceof HelloEvent) {
-            onHelloFromServer(ctx, (HelloEvent) event);
+            sendReadyCommand(ctx, (HelloEvent) event);
+        } else if (event instanceof AuthEvent) {
+            log.info("Handshake was successful");
+            ctx.pipeline().remove(this);
         } else if (event instanceof NotReadyEvent) {
             log.error("Handshake failed, acestream not ready. Wrong product key? ");
-        } else if (event instanceof AuthEvent) {
-
         }
-
-        //As Response AUTH 0/1 NOT_READY
     }
 
-    private void onHelloFromServer(ChannelHandlerContext ctx, HelloEvent event) throws InterruptedException {
+    private void sendReadyCommand(ChannelHandlerContext ctx, HelloEvent event) throws InterruptedException {
         String responseKey = generateResponseKey(event.getRequestKey());
         ctx.writeAndFlush(new ReadyCommand(responseKey))
            .sync();

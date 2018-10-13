@@ -33,22 +33,15 @@ public class TelnetClientInitializer extends ChannelInitializer<SocketChannel> {
 
     private static final CommandEncoder COMMAND_ENCODER = new CommandEncoder(Charset.forName("US-ASCII"));
     private static final DelimiterBasedFrameDecoder TELNET_MESSAGE_DECODER = new DelimiterBasedFrameDecoder(8192, Delimiters.lineDelimiter());
-    private  static final EventDecoder EVENT_DECODER = new EventDecoder(Charset.forName("US-ASCII"));
-
-
-    TelnetClientInitializer() {
-    }
+    private static final EventDecoder EVENT_DECODER = new EventDecoder(Charset.forName("US-ASCII"));
 
     @Override
     public void initChannel(SocketChannel ch) {
-        ChannelPipeline pipeline = ch.pipeline();
 
-        // Add the text line codec combination first,
-        pipeline.addLast(TELNET_MESSAGE_DECODER);
-        pipeline.addLast(EVENT_DECODER);
-        pipeline.addLast(COMMAND_ENCODER);
-
-        // and then business logic.
-        pipeline.addLast(new Handshake());
+        ch.pipeline()
+          .addLast(TELNET_MESSAGE_DECODER)
+          .addLast(EVENT_DECODER)
+          .addLast(COMMAND_ENCODER)
+          .addLast(new Handshake());
     }
 }

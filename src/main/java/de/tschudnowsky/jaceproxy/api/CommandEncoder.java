@@ -44,7 +44,8 @@ public class CommandEncoder extends MessageToMessageEncoder<Command> {
         if (command == null) {
             return;
         }
-        CommandMapper<Command> mapper = CommandMapperFactory.getCommmandMapper(command);
+        log.debug("Sending command: {}", command);
+        CommandMapper<Command> mapper = CommandMapperFactory.getCommandMapper(command);
         if (mapper != null) {
             out.add(ByteBufUtil.encodeString(ctx.alloc(), CharBuffer.wrap(mapper.writeAsString(command) + "\r\n"), charset));
         } else {

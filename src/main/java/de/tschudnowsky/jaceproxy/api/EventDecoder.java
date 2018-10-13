@@ -1,5 +1,6 @@
 package de.tschudnowsky.jaceproxy.api;
 
+import de.tschudnowsky.jaceproxy.api.events.Event;
 import de.tschudnowsky.jaceproxy.api.events.EventMapper;
 import de.tschudnowsky.jaceproxy.api.events.EventMapperFactory;
 import io.netty.buffer.ByteBuf;
@@ -29,13 +30,19 @@ public class EventDecoder extends MessageToMessageDecoder<ByteBuf> {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) {
         String rawValue = msg.toString(charset);
+        log.debug("Event received: {}", rawValue);
         EventMapper<?> mapper = EventMapperFactory.findMapper(rawValue);
         if (mapper != null) {
             //Strip out event name
-            rawValue = rawValue.substring(rawValue.indexOf(PROPERTY_SEPARATOR)).trim();
-            out.add(mapper.readValue(rawValue));
+            int startOfProperties = rawValue.indexOf(PROPERTY_SEPARATOR);
+            if (startOfProperties > -1) {
+                rawValue = rawValue.substring(startOfProperties).trim();
+            }
+            Event event = mapper.readValue(rawValue);
+            log.debug("decoded as: {}", event);
+            out.add(event);
         } else {
-            log.warn("Unknown event {}", rawValue);
+            log.warn("No mapper for event found: {}", rawValue);
         }
     }
 }

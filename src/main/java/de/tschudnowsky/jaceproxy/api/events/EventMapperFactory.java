@@ -2,35 +2,34 @@ package de.tschudnowsky.jaceproxy.api.events;
 
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.commons.lang3.StringUtils.defaultString;
+import java.util.HashMap;
+import java.util.Map;
+
+import static de.tschudnowsky.jaceproxy.api.Message.PROPERTY_SEPARATOR;
 
 /**
  * User: pavel
  * Date: 07.10.18
  * Time: 16:55
  */
-public enum EventMapperFactory {
+public class EventMapperFactory {
 
-    HELLO("HELLOTS", new HelloEventMapper()),
-    NOT_READY("NOTREADY", new NotReadyEventMapper()),
-    AUTH("AUTH", new AuthEventMapper())
-    ;
-
-    private String event;
-    private EventMapper<?> eventMapper;
-
-    EventMapperFactory(String event, EventMapper<?> eventMapper) {
-        this.event = event;
-        this.eventMapper = eventMapper;
-    }
-
-    @Nullable
-    public static EventMapper<?> findMapper(String rawEvent) {
-        for (EventMapperFactory factory : values()) {
-            if (defaultString(rawEvent).startsWith(factory.event)) {
-                return factory.eventMapper;
-            }
+    private static final Map<String, EventMapper<? extends Event>> map = new HashMap<String, EventMapper<? extends Event>>() {
+        {
+            put("AUTH", new AuthEventMapper());
+            put("EVENT", new GenericEventMapper());
+            put("HELLOTS", new HelloEventMapper());
+            put("NOTREADY", new EmptyEventMapper<>(NotReadyEvent.class));
         }
-        return null;
+    };
+
+    @SuppressWarnings("unchecked")
+    @Nullable
+    public static <T extends Event> EventMapper<T> findMapper(String rawEvent) {
+        int startOfProperties = rawEvent.indexOf(PROPERTY_SEPARATOR);
+        boolean hasProperties = startOfProperties > -1;
+        return (EventMapper<T>) map.get(hasProperties
+                ? rawEvent.substring(0, startOfProperties)
+                : rawEvent);
     }
 }

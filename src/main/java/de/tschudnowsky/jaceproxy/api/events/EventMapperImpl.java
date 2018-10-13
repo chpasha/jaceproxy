@@ -25,6 +25,7 @@ public abstract class EventMapperImpl<T extends Event> implements EventMapper<T>
 
     protected abstract Map<String, BiConsumer<T, String>> getPropertyMappings();
 
+
     @Override
     @Nullable
     public T readValue(@NotNull @NonNull String raw) {

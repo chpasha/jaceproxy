@@ -9,15 +9,14 @@ import java.util.function.BiConsumer;
  * Date: 07.10.18
  * Time: 13:36
  */
-public class NotReadyEventMapper extends EventMapperImpl<NotReadyEvent>  {
+public class EmptyEventMapper<T extends Event> extends EventMapperImpl<T> {
 
-
-    NotReadyEventMapper() {
-        super(NotReadyEvent.class);
+    EmptyEventMapper(Class<T> clazz) {
+        super(clazz);
     }
 
     @Override
-    protected Map<String, BiConsumer<NotReadyEvent, String>> getPropertyMappings() {
+    protected Map<String, BiConsumer<T, String>> getPropertyMappings() {
         return Collections.emptyMap();
     }
 }

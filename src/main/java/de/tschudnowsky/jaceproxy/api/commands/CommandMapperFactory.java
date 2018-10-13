@@ -21,8 +21,8 @@ public class CommandMapperFactory {
 
     @SuppressWarnings("unchecked")
     @Nullable
-    public static CommandMapper<Command> getCommmandMapper(Command command) {
-        return (CommandMapper<Command>) map.get(command.getClass());
+    public static  <T extends Command> CommandMapper<T> getCommandMapper(T command) {
+        return (CommandMapper<T>) map.get(command.getClass());
     }
 
 }
