@@ -8,6 +8,7 @@ import java.util.function.Function;
 
 import static de.tschudnowsky.jaceproxy.api.Message.PROPERTY_SEPARATOR;
 import static de.tschudnowsky.jaceproxy.api.Message.VALUE_SEPARATOR;
+import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
@@ -23,6 +24,10 @@ public abstract class CommandMapperImpl<T extends Command> implements CommandMap
 
     @Nullable String toString(Integer value) {
         return value != null ? value.toString() : null;
+    }
+
+    @Nullable String toString(Boolean value) {
+        return defaultIfNull(value, false) ? "1" : "0";
     }
 
     @Override
