@@ -19,12 +19,15 @@ public class GenericEventMapper implements EventMapper<Event> {
     private static final Map<String, Class<? extends Event>> eventMap = new HashMap<String, Class<? extends Event>>() {
         {
             put("getuserdata", GetUserDataEvent.class);
+            put("showurl", NotSupportedEvent.class);
         }
     };
 
     private static final Map<String, EventMapper<? extends Event>> eventMapperMap = new HashMap<String, EventMapper<? extends Event>>() {
         {
             put("cansave", new CanSaveEventMapper());
+            put("livepos", new LiveposEventMapper());
+            put("download_stopped", new DownloadStoppedEventMapper());
         }
     };
 
@@ -54,7 +57,7 @@ public class GenericEventMapper implements EventMapper<Event> {
             return eventMapper.readValue(eventProperties);
         } else {
             log.error("Unknown generic event {}", eventType);
-            return null;
+            return new NotSupportedEvent();
         }
     }
 
@@ -70,6 +73,6 @@ public class GenericEventMapper implements EventMapper<Event> {
         } catch (Exception e) {
             log.error("Instantiate generic event", e);
         }
-        return null;
+        return new NotSupportedEvent();
     }
 }

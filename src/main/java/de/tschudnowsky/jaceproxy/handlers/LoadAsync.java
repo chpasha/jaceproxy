@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 @Sharable
 @Slf4j
 @RequiredArgsConstructor
-public class LoadAsyncTorrent extends SimpleChannelInboundHandler<Event> {
+public class LoadAsync extends SimpleChannelInboundHandler<Event> {
 
     private final String url;
     private int requestId;
@@ -53,32 +53,36 @@ public class LoadAsyncTorrent extends SimpleChannelInboundHandler<Event> {
             return;
         }
         if (notValidResponse(event)) {
+            log.error("Closing because of invalid response");
             ctx.close();
+            return;
         }
 
         LoadAsyncResponseEvent responseEvent = (LoadAsyncResponseEvent) event;
-
+        ctx.pipeline().addLast(new Start(responseEvent.getResponse(), url));
+        ctx.pipeline().remove(this);
+        ctx.fireChannelActive();
     }
 
     private boolean notValidResponse(Event event) {
         if (event instanceof LoadAsyncResponseEvent) {
-            return validateLoadAsyncResponse((LoadAsyncResponseEvent) event);
+            return notValidLoadAsyncResponse((LoadAsyncResponseEvent) event);
         } else {
             log.error("Didn't receive LOADRESP");
-            return false;
+            return true;
         }
     }
 
-    private boolean validateLoadAsyncResponse(LoadAsyncResponseEvent event) {
+    private boolean notValidLoadAsyncResponse(LoadAsyncResponseEvent event) {
         if (event.getRequestId() != requestId) {
             log.error("Received wrong responseId. Expected {}, but got {}", requestId, event.getRequestId());
-            return false;
+            return true;
         }
         if (event.getResponse().getStatus() == LoadAsyncResponseEvent.TransportFileContentDescription.ERROR_RETRIEVING) {
             log.error("AceEngine failed to load transport data");
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     @Override
