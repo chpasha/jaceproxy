@@ -15,18 +15,13 @@
  */
 package de.tschudnowsky.jaceproxy.handlers;
 
-import de.tschudnowsky.jaceproxy.api.commands.StartTorrentCommand;
 import de.tschudnowsky.jaceproxy.api.events.Event;
-import de.tschudnowsky.jaceproxy.api.events.LoadAsyncResponseEvent;
-import de.tschudnowsky.jaceproxy.api.events.StartPlayEvent;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import static java.util.Collections.singletonList;
 
 
 /**
@@ -35,36 +30,26 @@ import static java.util.Collections.singletonList;
 @Sharable
 @Slf4j
 @RequiredArgsConstructor
-public class Start extends SimpleChannelInboundHandler<Event> {
-
-    @NonNull
-    private final LoadAsyncResponseEvent.Response loadAsyncResponse;
+public class Play extends SimpleChannelInboundHandler<Event> {
 
     @NonNull
     private final String url;
 
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        LoadAsyncResponseEvent.TransportFile transportFile = loadAsyncResponse.getFiles().get(0);
-        StartTorrentCommand startCommand = new StartTorrentCommand(url, singletonList(0), transportFile.getStreamId());
-        ctx.writeAndFlush(startCommand)
-           .sync();
+    public void channelActive(ChannelHandlerContext ctx)  {
+
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Event event) {
-        if (event instanceof StartPlayEvent) {
-            ctx.pipeline().addLast(new Play(((StartPlayEvent) event).getUrl()));
-            ctx.pipeline().remove(this);
-            ctx.fireChannelActive();
-        }
+
     }
 
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.error("Start Failed failed", cause);
+        log.error("Playback failed", cause);
         ctx.close();
     }
 }

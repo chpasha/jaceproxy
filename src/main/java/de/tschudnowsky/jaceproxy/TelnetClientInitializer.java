@@ -44,6 +44,9 @@ public class TelnetClientInitializer extends ChannelInitializer<SocketChannel> {
           .addLast(EVENT_DECODER)
           .addLast(COMMAND_ENCODER)
           .addLast(new Handshake())
-          .addLast(new LoadAsync("http://91.92.66.82/trash/ttv-list/acelive/ttv_1016_all.acelive"));
+          //.addLast(new LoadAsync("http://91.92.66.82/trash/ttv-list/acelive/ttv_1016_all.acelive"))
+          .addLast(new LoadAsync("http://91.92.66.82/trash/ttv-list/acelive/ttv_23136.acelive"))
+
+        ;
     }
 }

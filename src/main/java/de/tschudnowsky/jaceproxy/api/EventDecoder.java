@@ -39,12 +39,14 @@ public class EventDecoder extends MessageToMessageDecoder<ByteBuf> {
                 rawValue = rawValue.substring(startOfProperties).trim();
             }
             Event event = mapper.readValue(rawValue);
-            log.debug("decoded as: {}", event);
             if (event != null) {
+                log.debug("Event received: {}", event);
                 out.add(event);
+            } else {
+                log.error("Mapper {} could not decode event {}", mapper, rawValue);
             }
         } else {
-            log.warn("No mapper for event found: {}", rawValue);
+            log.warn("Unknown event received: {}", rawValue);
         }
     }
 }
