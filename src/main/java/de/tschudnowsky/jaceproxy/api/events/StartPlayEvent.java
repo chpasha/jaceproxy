@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class StartEvent extends EventImpl {
+public class StartPlayEvent extends EventImpl {
     private String url;
     private boolean isLiveStream;
 }
