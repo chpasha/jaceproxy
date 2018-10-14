@@ -18,6 +18,12 @@ public class CommandMapperFactory {
             put(ReadyCommand.class, new ReadyCommandMapper());
             put(UserDataCommand.class, new UserDataCommandMapper());
             put(SetOptionsCommand.class, new SetOptionsCommandMapper());
+
+            LoadAsyncCommandMapper<LoadAsyncCommand> loadAsyncMapper = new LoadAsyncCommandMapper<>();
+            put(LoadAsyncContentIDCommand.class, loadAsyncMapper);
+            put(LoadAsyncInfohashCommand.class, loadAsyncMapper);
+            put(LoadAsyncRawTransportFileCommand.class, loadAsyncMapper);
+            put(LoadAsyncTorrentCommand.class, loadAsyncMapper);
         }
     };
 

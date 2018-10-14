@@ -9,6 +9,9 @@ import de.tschudnowsky.jaceproxy.api.MessageImpl;
  */
 abstract class CommandImpl extends MessageImpl implements Command {
 
+    public CommandImpl() {
+    }
+
     CommandImpl(String name) {
         super(name);
     }
