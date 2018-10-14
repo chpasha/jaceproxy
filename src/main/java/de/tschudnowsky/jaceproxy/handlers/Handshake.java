@@ -46,7 +46,6 @@ public class Handshake extends SimpleChannelInboundHandler<Event> {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         ctx.writeAndFlush(new HelloCommand(PROTOCOL_VERSION))
            .sync();
-        //TODO timeout?
     }
 
     @Override

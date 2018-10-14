@@ -34,7 +34,7 @@ public final class TelnetClient {
             Bootstrap b = new Bootstrap();
             b.group(group)
              .channel(NioSocketChannel.class)
-             .handler(new TelnetClientInitializer());
+             .handler(new AceStreamClientInitializer("http://91.92.66.82/trash/ttv-list/acelive/ttv_23136.acelive", null));
 
             // Start the connection attempt.
             Channel ch = b.connect(HOST, PORT).sync().channel();

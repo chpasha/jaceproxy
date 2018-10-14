@@ -15,26 +15,31 @@
  */
 package de.tschudnowsky.jaceproxy;
 
-import de.tschudnowsky.jaceproxy.handlers.Handshake;
-import de.tschudnowsky.jaceproxy.handlers.LoadAsync;
 import de.tschudnowsky.jaceproxy.api.CommandEncoder;
 import de.tschudnowsky.jaceproxy.api.EventDecoder;
+import de.tschudnowsky.jaceproxy.handlers.Handshake;
+import de.tschudnowsky.jaceproxy.handlers.LoadAsync;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.Delimiters;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.Charset;
 
-/**
- * Creates a newly configured {@link ChannelPipeline} for a new channel.
- */
-public class TelnetClientInitializer extends ChannelInitializer<SocketChannel> {
+@Slf4j
+@RequiredArgsConstructor
+public class AceStreamClientInitializer extends ChannelInitializer<SocketChannel> {
 
-    private static final CommandEncoder COMMAND_ENCODER = new CommandEncoder(Charset.forName("US-ASCII"));
     private static final DelimiterBasedFrameDecoder TELNET_MESSAGE_DECODER = new DelimiterBasedFrameDecoder(8192, Delimiters.lineDelimiter());
+    private static final CommandEncoder COMMAND_ENCODER = new CommandEncoder(Charset.forName("US-ASCII"));
     private static final EventDecoder EVENT_DECODER = new EventDecoder(Charset.forName("US-ASCII"));
+
+    private final String url;
+    private final Channel inboundChannel;
 
     @Override
     public void initChannel(SocketChannel ch) {
@@ -44,9 +49,18 @@ public class TelnetClientInitializer extends ChannelInitializer<SocketChannel> {
           .addLast(EVENT_DECODER)
           .addLast(COMMAND_ENCODER)
           .addLast(new Handshake())
-          //.addLast(new LoadAsync("http://91.92.66.82/trash/ttv-list/acelive/ttv_1016_all.acelive"))
-          .addLast(new LoadAsync("http://91.92.66.82/trash/ttv-list/acelive/ttv_23136.acelive"))
-
+          .addLast(new LoadAsync(url, inboundChannel))
         ;
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        JAceHttpHandler.closeOnFlush(inboundChannel);
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        log.error("", cause);
+        JAceHttpHandler.closeOnFlush(ctx.channel());
     }
 }

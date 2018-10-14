@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class JAceHttpServer {
 
-    private static final int PORT = 9000;
+    private static final int PORT = 8000;
 
     private ChannelFuture channel;
     private final EventLoopGroup masterGroup;

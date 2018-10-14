@@ -19,12 +19,20 @@ import de.tschudnowsky.jaceproxy.api.commands.StartTorrentCommand;
 import de.tschudnowsky.jaceproxy.api.events.Event;
 import de.tschudnowsky.jaceproxy.api.events.LoadAsyncResponseEvent;
 import de.tschudnowsky.jaceproxy.api.events.StartPlayEvent;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.*;
 import io.netty.channel.ChannelHandler.Sharable;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.http.*;
+import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.util.internal.SocketUtils;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.net.URI;
 
 import static java.util.Collections.singletonList;
 
@@ -43,6 +51,8 @@ public class Start extends SimpleChannelInboundHandler<Event> {
     @NonNull
     private final String url;
 
+    private final Channel inboundChannel;
+
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -55,9 +65,56 @@ public class Start extends SimpleChannelInboundHandler<Event> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Event event) {
         if (event instanceof StartPlayEvent) {
-            ctx.pipeline().addLast(new Play(((StartPlayEvent) event).getUrl()));
+
+            StartPlayEvent startPlay = (StartPlayEvent) event;
             ctx.pipeline().remove(this);
-            ctx.fireChannelActive();
+
+            inboundChannel.writeAndFlush(startPlay.getUrl());
+
+
+            if (true)
+            return;
+
+            EventLoopGroup group = new NioEventLoopGroup();
+            try {
+
+                URI uri = new URI(startPlay.getUrl());
+                String host = uri.getHost();
+                int port = uri.getPort();
+
+                Bootstrap b = new Bootstrap();
+                b.group(group)
+                 .channel(NioSocketChannel.class)
+                 .handler(new ChannelInitializer<SocketChannel>() {
+
+                     @Override
+                     protected void initChannel(SocketChannel ch) {
+                         ChannelPipeline pipeline = ch.pipeline();
+                         pipeline.addLast(new HttpClientCodec());
+                         pipeline.addLast(new ChunkedWriteHandler());
+                         pipeline.addLast(new Download(startPlay.getUrl(), inboundChannel));
+                     }
+                 });
+
+
+                Channel channel = b.connect(SocketUtils.socketAddress(host, port)).channel();
+                // Wait until the connection attempt succeeds or fails.
+                // Prepare the HTTP request.
+                HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, uri.getPath());
+                // send request
+                channel.writeAndFlush(request);
+                // Wait for the server to close the connection.
+                channel.closeFuture().sync();
+
+            } catch (Exception e) {
+                log.error("", e);
+                ctx.close();
+            } finally {
+                // Shut down executor threads to exit.
+                group.shutdownGracefully();
+
+                // Really clean all temporary files if they still exist
+            }
         }
     }
 

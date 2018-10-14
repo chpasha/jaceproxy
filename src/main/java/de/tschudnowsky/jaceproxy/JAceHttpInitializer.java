@@ -6,6 +6,7 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.stream.ChunkedWriteHandler;
 
 /**
  * User: pavel
@@ -18,7 +19,8 @@ public class JAceHttpInitializer extends ChannelInitializer<SocketChannel> {
         ch.pipeline()
           .addLast(new LoggingHandler(LogLevel.INFO))
           .addLast("codec", new HttpServerCodec())
-          .addLast("aggregator", new HttpObjectAggregator(512 * 1024))
+          .addLast("aggregator", new HttpObjectAggregator(65536))
+          .addLast(new ChunkedWriteHandler())
           .addLast("request", new JAceHttpHandler());
     }
 }

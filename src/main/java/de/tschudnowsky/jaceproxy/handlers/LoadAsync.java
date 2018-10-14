@@ -19,6 +19,7 @@ import de.tschudnowsky.jaceproxy.api.commands.LoadAsyncTorrentCommand;
 import de.tschudnowsky.jaceproxy.api.events.Event;
 import de.tschudnowsky.jaceproxy.api.events.LoadAsyncResponseEvent;
 import de.tschudnowsky.jaceproxy.api.events.StatusEvent;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -37,6 +38,8 @@ import lombok.extern.slf4j.Slf4j;
 public class LoadAsync extends SimpleChannelInboundHandler<Event> {
 
     private final String url;
+    private final Channel inboundChannel;
+
     private int requestId;
 
     @Override
@@ -59,7 +62,7 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
         }
 
         LoadAsyncResponseEvent responseEvent = (LoadAsyncResponseEvent) event;
-        ctx.pipeline().addLast(new Start(responseEvent.getResponse(), url));
+        ctx.pipeline().addLast(new Start(responseEvent.getResponse(), url, inboundChannel));
         ctx.pipeline().remove(this);
         ctx.fireChannelActive();
     }
