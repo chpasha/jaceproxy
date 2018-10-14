@@ -18,6 +18,7 @@ package de.tschudnowsky.jaceproxy.handlers;
 import de.tschudnowsky.jaceproxy.api.commands.LoadAsyncTorrentCommand;
 import de.tschudnowsky.jaceproxy.api.events.Event;
 import de.tschudnowsky.jaceproxy.api.events.LoadAsyncResponseEvent;
+import de.tschudnowsky.jaceproxy.api.events.StatusEvent;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -40,16 +41,17 @@ public class LoadAsyncTorrent extends SimpleChannelInboundHandler<Event> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        LoadAsyncTorrentCommand loadAsync = LoadAsyncTorrentCommand.builder()
-                                                                   .torrentUrl(url)
-                                                                   .build();
+        LoadAsyncTorrentCommand loadAsync = new LoadAsyncTorrentCommand(url);
         requestId = loadAsync.getRequestId();
         ctx.writeAndFlush(loadAsync)
            .sync();
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Event event) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, Event event) {
+        if (event instanceof StatusEvent) {
+            return;
+        }
         if (notValidResponse(event)) {
             ctx.close();
         }

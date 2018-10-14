@@ -16,7 +16,7 @@ public abstract class LoadAsyncCommand extends CommandImpl {
     private static final AtomicInteger requestIdGenerator = new AtomicInteger(Integer.MAX_VALUE);
 
     private final int requestId = requestIdGenerator.decrementAndGet();
-    private String developerAffiliateZone = "0 0 0";
+    private final String developerAffiliateZone = "0 0 0";
 
     private final Type type;
 

@@ -52,7 +52,7 @@ public class LoadAsyncResponseEvent extends EventImpl {
     @JsonDeserialize(using = TransportFileDeserializer.class)
     public static class TransportFile {
         private String filename;
-        private int position;
+        private int streamId;
     }
 
     public static class TransportFileDeserializer extends JsonDeserializer<TransportFile> {
@@ -64,7 +64,7 @@ public class LoadAsyncResponseEvent extends EventImpl {
                 ArrayList array = values.next();
                 return TransportFile.builder()
                         .filename(URLDecoder.decode((String) array.get(0), "UTF-8"))
-                        .position((Integer)array.get(1))
+                        .streamId((Integer)array.get(1))
                         .build();
             }
             return null;

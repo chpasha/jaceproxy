@@ -1,6 +1,5 @@
 package de.tschudnowsky.jaceproxy.api.commands;
 
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -11,17 +10,12 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-@Builder
 public class LoadAsyncContentIDCommand extends LoadAsyncCommand {
 
     private String contentId;
 
-    private LoadAsyncContentIDCommand(String contentId) {
-        this();
-        this.contentId = contentId;
-    }
-
-    public LoadAsyncContentIDCommand() {
+    public LoadAsyncContentIDCommand(String contentId) {
         super(Type.PID);
+        this.contentId = contentId;
     }
 }

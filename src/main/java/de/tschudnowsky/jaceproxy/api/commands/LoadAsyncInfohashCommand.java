@@ -1,6 +1,5 @@
 package de.tschudnowsky.jaceproxy.api.commands;
 
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -11,17 +10,14 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-@Builder
 public class LoadAsyncInfohashCommand extends LoadAsyncCommand {
 
     private String infohash;
 
-    private LoadAsyncInfohashCommand(String infohash) {
-        this();
+    public LoadAsyncInfohashCommand(String infohash) {
+        super(Type.INFOHASH);
         this.infohash = infohash;
     }
 
-    public LoadAsyncInfohashCommand() {
-        super(Type.INFOHASH);
-    }
+
 }

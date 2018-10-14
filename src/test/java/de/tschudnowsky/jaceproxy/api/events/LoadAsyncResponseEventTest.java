@@ -26,7 +26,7 @@ public class LoadAsyncResponseEventTest extends EventMapperTest {
                 .hasSize(1)
                 .contains(LoadAsyncResponseEvent.TransportFile.builder()
                                                               .filename("Матч ТВ HD")
-                                                              .position(0)
+                                                              .streamId(0)
                                                               .build());
 
 

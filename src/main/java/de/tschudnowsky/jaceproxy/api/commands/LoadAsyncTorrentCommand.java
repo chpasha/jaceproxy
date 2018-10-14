@@ -1,6 +1,5 @@
 package de.tschudnowsky.jaceproxy.api.commands;
 
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -11,17 +10,12 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-@Builder
 public class LoadAsyncTorrentCommand extends LoadAsyncCommand {
 
     private String torrentUrl;
 
-    private LoadAsyncTorrentCommand(String torrentUrl) {
-        this();
-        this.torrentUrl = torrentUrl;
-    }
-
-    public LoadAsyncTorrentCommand() {
+    public LoadAsyncTorrentCommand(String torrentUrl) {
         super(Type.TORRENT);
+        this.torrentUrl = torrentUrl;
     }
 }
