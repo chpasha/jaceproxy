@@ -23,6 +23,7 @@ public class EventMapperFactory {
             put("STATUS", new StatusEventMapper());
             put("LOADRESP", new LoadAsyncResponseEventMapper());
             put("STATE", new StateEventMapper());
+            put("START", new StartEventMapper());
         }
     };
 
