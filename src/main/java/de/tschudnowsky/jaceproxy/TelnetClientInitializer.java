@@ -15,7 +15,8 @@
  */
 package de.tschudnowsky.jaceproxy;
 
-import de.tschudnowsky.jaceproxy.acestream.Handshake;
+import de.tschudnowsky.jaceproxy.handlers.Handshake;
+import de.tschudnowsky.jaceproxy.handlers.LoadAsyncTorrent;
 import de.tschudnowsky.jaceproxy.api.CommandEncoder;
 import de.tschudnowsky.jaceproxy.api.EventDecoder;
 import io.netty.channel.ChannelInitializer;
@@ -42,6 +43,7 @@ public class TelnetClientInitializer extends ChannelInitializer<SocketChannel> {
           .addLast(TELNET_MESSAGE_DECODER)
           .addLast(EVENT_DECODER)
           .addLast(COMMAND_ENCODER)
-          .addLast(new Handshake());
+          .addLast(new Handshake())
+          .addLast(new LoadAsyncTorrent("http://91.92.66.82/trash/ttv-list/acelive/ttv_1016_all.acelive"));
     }
 }

@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package de.tschudnowsky.jaceproxy.acestream;
+package de.tschudnowsky.jaceproxy.handlers;
 
 import de.tschudnowsky.jaceproxy.api.commands.HelloCommand;
 import de.tschudnowsky.jaceproxy.api.commands.ReadyCommand;
@@ -56,6 +56,7 @@ public class Handshake extends SimpleChannelInboundHandler<Event> {
         } else if (event instanceof AuthEvent) {
             log.info("Handshake was successful");
             ctx.pipeline().remove(this);
+            ctx.fireChannelActive(); //Initiate next Handler in pipeline
         } else if (event instanceof NotReadyEvent) {
             log.error("Handshake failed, acestream not ready. Wrong product key? ");
         }

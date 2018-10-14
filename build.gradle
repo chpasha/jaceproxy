@@ -24,6 +24,7 @@ dependencies {
     compile "org.apache.commons:commons-lang3:3.8.1"
     compile 'commons-codec:commons-codec:1.11'
 
+    compile "com.fasterxml.jackson.core:jackson-databind:2.9.4"
 
     compile 'org.slf4j:slf4j-api:1.7.25'
     compile 'ch.qos.logback:logback-core:1.2.3'

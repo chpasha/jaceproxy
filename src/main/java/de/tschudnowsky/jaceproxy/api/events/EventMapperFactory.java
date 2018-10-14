@@ -20,6 +20,8 @@ public class EventMapperFactory {
             put("EVENT", new GenericEventMapper());
             put("HELLOTS", new HelloEventMapper());
             put("NOTREADY", new EmptyEventMapper<>(NotReadyEvent.class));
+            put("STATUS", new StatusEventMapper());
+            put("LOADRESP", new LoadAsyncResponseEventMapper());
         }
     };
 
