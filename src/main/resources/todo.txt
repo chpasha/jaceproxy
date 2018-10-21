@@ -1,2 +1,5 @@
-- decode prebuff
+- detect timeout
+- restart on timeout
+- play same channel two clients
+- decode status line e.g. download speed, peers etc
 - make log readable
