@@ -17,8 +17,10 @@ package de.tschudnowsky.jaceproxy.handlers;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.stream.ChunkedInput;
 import io.netty.handler.stream.ChunkedStream;
@@ -43,45 +45,49 @@ public class Download extends SimpleChannelInboundHandler<HttpObject> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception {
-        if (msg instanceof HttpResponse) {
-            HttpResponse response = (HttpResponse) msg;
+    public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
+        if (inboundChannel.isActive()) {
+            if (msg instanceof HttpResponse) {
+                sendHttpResponse((HttpResponse) msg);
+            }
+            if (msg instanceof HttpContent) {
+                streamHttpContent((HttpContent) msg);
+            }
+        } else {
+            log.warn("Inbound channel inactive, stopping streaming");
+            ctx.close();
+        }
+    }
 
-            log.info("STATUS: {}", response.status());
-            log.info("VERSION: {}", response.protocolVersion());
-
-            if (!response.headers().isEmpty()) {
-                for (CharSequence name : response.headers().names()) {
-                    for (CharSequence value : response.headers().getAll(name)) {
-                        log.info("HEADER: {} = {}", name, value);
-                    }
+    private void sendHttpResponse(HttpResponse msg) {
+        HttpResponse response = msg;
+        log.info("STATUS: {}", response.status());
+        log.info("VERSION: {}", response.protocolVersion());
+        if (!response.headers().isEmpty()) {
+            for (CharSequence name : response.headers().names()) {
+                for (CharSequence value : response.headers().getAll(name)) {
+                    log.info("HEADER: {} = {}", name, value);
                 }
             }
-            response = new DefaultHttpResponse(HTTP_1_1, OK);
-            response.headers().set(TRANSFER_ENCODING, CHUNKED);
-            response.headers().set(HttpHeaderNames.CONNECTION, KEEP_ALIVE);
-            response.headers().set(HttpHeaderNames.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
-            response.headers().set(HttpHeaderNames.ACCEPT_RANGES, BYTES);
-
-            inboundChannel.writeAndFlush(response);
         }
-        if (msg instanceof HttpContent) {
-            HttpContent chunk = (HttpContent) msg;
+        response = new DefaultHttpResponse(HTTP_1_1, OK);
+        response.headers().set(TRANSFER_ENCODING, CHUNKED);
+        response.headers().set(HttpHeaderNames.CONNECTION, KEEP_ALIVE);
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
+        response.headers().set(HttpHeaderNames.ACCEPT_RANGES, BYTES);
+        inboundChannel.writeAndFlush(response);
+    }
 
-            ChunkedInput<ByteBuf> chunkedInput = new ChunkedStream(new ByteBufInputStream(chunk.content()));
-            inboundChannel.writeAndFlush(chunkedInput);
-            if (chunk instanceof LastHttpContent) {
-                log.info("Download stopped");
-                inboundChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
-            } else {
-                // log.info(chunk.content().toString(CharsetUtil.UTF_8));
-                //inboundChannel.pipeline().get(ChunkedWriteHandler.class).resumeTransfer();
-            }
-        }
+    private void streamHttpContent(HttpContent msg) {
+        ChunkedInput<ByteBuf> chunkedInput = new ChunkedStream(new ByteBufInputStream(msg.content()));
+        inboundChannel.writeAndFlush(chunkedInput);
+        if (msg instanceof LastHttpContent) {
+            log.info("Download stopped");
+            inboundChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+        } 
     }
 
 

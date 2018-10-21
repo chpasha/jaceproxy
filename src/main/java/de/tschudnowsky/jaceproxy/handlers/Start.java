@@ -15,7 +15,9 @@
  */
 package de.tschudnowsky.jaceproxy.handlers;
 
+import de.tschudnowsky.jaceproxy.api.commands.ShutdownCommand;
 import de.tschudnowsky.jaceproxy.api.commands.StartTorrentCommand;
+import de.tschudnowsky.jaceproxy.api.commands.StopCommand;
 import de.tschudnowsky.jaceproxy.api.events.Event;
 import de.tschudnowsky.jaceproxy.api.events.LoadAsyncResponseEvent;
 import de.tschudnowsky.jaceproxy.api.events.StartPlayEvent;
@@ -53,10 +55,23 @@ public class Start extends SimpleChannelInboundHandler<Event> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
+
+        inboundChannel.closeFuture().addListener((ChannelFutureListener) future -> {
+            log.warn("Inbound channel closed, stopping ace client");
+            stopAceClient(ctx);
+        });
+
         LoadAsyncResponseEvent.TransportFile transportFile = loadAsyncResponse.getFiles().get(0);
         StartTorrentCommand startCommand = new StartTorrentCommand(url, singletonList(0), transportFile.getStreamId());
         ctx.writeAndFlush(startCommand)
            .sync();
+    }
+
+    private void stopAceClient(ChannelHandlerContext ctx) {
+        ctx.write(new StopCommand());
+        ctx.write(new ShutdownCommand());
+        ctx.flush();
+        ctx.close();
     }
 
     @Override
@@ -69,7 +84,6 @@ public class Start extends SimpleChannelInboundHandler<Event> {
     }
 
     private void stream(ChannelHandlerContext ctx, String url) {
-        //EventLoopGroup group = new NioEventLoopGroup();
         try {
             URI uri = new URI(url);
             String host = uri.getHost();
@@ -98,24 +112,16 @@ public class Start extends SimpleChannelInboundHandler<Event> {
                     f.channel().close();
                 }
             });
-            // Wait until the connection attempt succeeds or fails.
-            // Prepare the HTTP request.
-
-            // send request
-            //f.channel().writeAndFlush(request);
-            //channel.closeFuture().sync();
         } catch (Exception e) {
             log.error("", e);
-            ctx.close();
-        } finally {
-            //group.shutdownGracefully();
+            stopAceClient(ctx);
         }
     }
 
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.error("Start Failed failed", cause);
-        ctx.close();
+        log.error("Start failed", cause);
+        stopAceClient(ctx);
     }
 }

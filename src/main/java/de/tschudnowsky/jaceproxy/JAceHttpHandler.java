@@ -8,6 +8,8 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.LastHttpContent;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
+
 import static io.netty.buffer.Unpooled.copiedBuffer;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
@@ -42,17 +44,6 @@ public class JAceHttpHandler extends ChannelInboundHandlerAdapter {
             // Start the connection attempt.
             ChannelFuture f = b.connect(HOST, PORT);
             outboundChannel = f.channel();
-            if (false) {
-                f.addListener((ChannelFutureListener) future -> {
-                    if (future.isSuccess()) {
-                        // connection complete start to read first data
-                        inboundChannel.read();
-                    } else {
-                        // Close the connection if the connection attempt has failed.
-                        inboundChannel.close();
-                    }
-                });
-            }
         }
     }
 
@@ -66,18 +57,28 @@ public class JAceHttpHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx,
                                 Throwable cause) {
-        log.error("", cause);
-        ctx.writeAndFlush(new DefaultFullHttpResponse(
-                HTTP_1_1,
-                HttpResponseStatus.INTERNAL_SERVER_ERROR,
-                copiedBuffer(cause.getMessage().getBytes())
-        ));
+        if (isConnectionClosedByClient(cause)) {
+            log.warn("Connection closed by client");
+        } else {
+            log.error("", cause);
+
+            ctx.writeAndFlush(new DefaultFullHttpResponse(
+                    HTTP_1_1,
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                    copiedBuffer(cause.getMessage().getBytes())
+            ));
+        }
         closeOnFlush(ctx.channel());
+    }
+
+    private boolean isConnectionClosedByClient(Throwable cause) {
+        return cause instanceof IOException &&
+                cause.getMessage().equals("Connection reset by peer");
     }
 
     static void closeOnFlush(Channel ch) {
         if (ch.isActive()) {
-            ch.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT/*Unpooled.EMPTY_BUFFER*/).addListener(ChannelFutureListener.CLOSE);
+            ch.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT).addListener(ChannelFutureListener.CLOSE);
         }
     }
 }
