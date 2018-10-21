@@ -22,11 +22,8 @@ import de.tschudnowsky.jaceproxy.api.events.StartPlayEvent;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.ChannelHandler.Sharable;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
-import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.internal.SocketUtils;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -65,56 +62,53 @@ public class Start extends SimpleChannelInboundHandler<Event> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Event event) {
         if (event instanceof StartPlayEvent) {
-
             StartPlayEvent startPlay = (StartPlayEvent) event;
             ctx.pipeline().remove(this);
+            stream(ctx, startPlay.getUrl());
+        }
+    }
 
-            inboundChannel.writeAndFlush(startPlay.getUrl());
+    private void stream(ChannelHandlerContext ctx, String url) {
+        //EventLoopGroup group = new NioEventLoopGroup();
+        try {
+            URI uri = new URI(url);
+            String host = uri.getHost();
+            int port = uri.getPort();
 
+            Bootstrap b = new Bootstrap();
+            b.group(inboundChannel.eventLoop())
+             .channel(ctx.channel().getClass())
+             .handler(new ChannelInitializer<SocketChannel>() {
 
-            if (true)
-            return;
+                 @Override
+                 protected void initChannel(SocketChannel ch) {
+                     ChannelPipeline pipeline = ch.pipeline();
+                     pipeline.addLast(new HttpClientCodec());
+                     pipeline.addLast(new Download(inboundChannel));
+                 }
+             });
+            ChannelFuture f = b.connect(SocketUtils.socketAddress(host, port));
+            //Channel channel = f.sync().channel();
+            f.addListener((ChannelFutureListener) future -> {
+                if (future.isSuccess()) {
+                    // connection complete start to read first data
+                    HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, uri.getPath());
+                    f.channel().writeAndFlush(request);
+                } else {
+                    f.channel().close();
+                }
+            });
+            // Wait until the connection attempt succeeds or fails.
+            // Prepare the HTTP request.
 
-            EventLoopGroup group = new NioEventLoopGroup();
-            try {
-
-                URI uri = new URI(startPlay.getUrl());
-                String host = uri.getHost();
-                int port = uri.getPort();
-
-                Bootstrap b = new Bootstrap();
-                b.group(group)
-                 .channel(NioSocketChannel.class)
-                 .handler(new ChannelInitializer<SocketChannel>() {
-
-                     @Override
-                     protected void initChannel(SocketChannel ch) {
-                         ChannelPipeline pipeline = ch.pipeline();
-                         pipeline.addLast(new HttpClientCodec());
-                         pipeline.addLast(new ChunkedWriteHandler());
-                         pipeline.addLast(new Download(startPlay.getUrl(), inboundChannel));
-                     }
-                 });
-
-
-                Channel channel = b.connect(SocketUtils.socketAddress(host, port)).channel();
-                // Wait until the connection attempt succeeds or fails.
-                // Prepare the HTTP request.
-                HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, uri.getPath());
-                // send request
-                channel.writeAndFlush(request);
-                // Wait for the server to close the connection.
-                channel.closeFuture().sync();
-
-            } catch (Exception e) {
-                log.error("", e);
-                ctx.close();
-            } finally {
-                // Shut down executor threads to exit.
-                group.shutdownGracefully();
-
-                // Really clean all temporary files if they still exist
-            }
+            // send request
+            //f.channel().writeAndFlush(request);
+            //channel.closeFuture().sync();
+        } catch (Exception e) {
+            log.error("", e);
+            ctx.close();
+        } finally {
+            //group.shutdownGracefully();
         }
     }
 

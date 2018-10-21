@@ -2,13 +2,13 @@ package de.tschudnowsky.jaceproxy;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.LastHttpContent;
 import lombok.extern.slf4j.Slf4j;
 
 import static io.netty.buffer.Unpooled.copiedBuffer;
-import static io.netty.handler.codec.http.HttpHeaderNames.TRANSFER_ENCODING;
-import static io.netty.handler.codec.http.HttpHeaderValues.*;
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
@@ -29,22 +29,8 @@ public class JAceHttpHandler extends ChannelInboundHandlerAdapter {
         log.info(msg.toString());
         if (msg instanceof FullHttpRequest) {
 
+            //TODO parse request
             final FullHttpRequest request = (FullHttpRequest) msg;
-
-            /*TODO
-            1) parse request
-            2) start telnet with outbound channel or smth.
-            3) when we get http link by telnet, read it and stream to client
-            4) handle close
-            */
-
-            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-            response.headers().set(TRANSFER_ENCODING, CHUNKED);
-            response.headers().set(HttpHeaderNames.CONNECTION, KEEP_ALIVE);
-            response.headers().set(HttpHeaderNames.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
-            response.headers().set(HttpHeaderNames.ACCEPT_RANGES, NONE);
-            // Write the initial line and the header.
-            ctx.write(response);
 
             final Channel inboundChannel = ctx.channel();
 
@@ -56,28 +42,17 @@ public class JAceHttpHandler extends ChannelInboundHandlerAdapter {
             // Start the connection attempt.
             ChannelFuture f = b.connect(HOST, PORT);
             outboundChannel = f.channel();
-            f.addListener((ChannelFutureListener) future -> {
-                if (future.isSuccess()) {
-                    // connection complete start to read first data
-                    inboundChannel.read();
-                } else {
-                    // Close the connection if the connection attempt has failed.
-                    inboundChannel.close();
-                }
-            });
-        } else {
-
-            if (outboundChannel.isActive()) {
-                outboundChannel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
+            if (false) {
+                f.addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
-                        // was able to flush out data, start to read the next chunk
-                        ctx.channel().read();
+                        // connection complete start to read first data
+                        inboundChannel.read();
                     } else {
-                        future.channel().close();
+                        // Close the connection if the connection attempt has failed.
+                        inboundChannel.close();
                     }
                 });
             }
-
         }
     }
 
@@ -86,11 +61,6 @@ public class JAceHttpHandler extends ChannelInboundHandlerAdapter {
         if (outboundChannel != null) {
             closeOnFlush(outboundChannel);
         }
-    }
-
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) {
-        ctx.flush();
     }
 
     @Override

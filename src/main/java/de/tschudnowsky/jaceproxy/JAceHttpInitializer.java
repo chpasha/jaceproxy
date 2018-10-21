@@ -17,10 +17,11 @@ public class JAceHttpInitializer extends ChannelInitializer<SocketChannel> {
     @Override
     public void initChannel(final SocketChannel ch) {
         ch.pipeline()
-          .addLast(new LoggingHandler(LogLevel.INFO))
+          .addLast(new LoggingHandler(LogLevel.DEBUG))
+          .addLast("chunkWriter", new ChunkedWriteHandler())
           .addLast("codec", new HttpServerCodec())
           .addLast("aggregator", new HttpObjectAggregator(65536))
-          .addLast(new ChunkedWriteHandler())
-          .addLast("request", new JAceHttpHandler());
+          .addLast("request", new JAceHttpHandler())
+        ;
     }
 }

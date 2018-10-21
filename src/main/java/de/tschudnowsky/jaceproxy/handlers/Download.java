@@ -22,9 +22,14 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.stream.ChunkedStream;
-import lombok.NonNull;
+import io.netty.handler.stream.ChunkedWriteHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import static io.netty.handler.codec.http.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.netty.handler.codec.http.HttpHeaderValues.*;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 
 /**
@@ -34,9 +39,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 public class Download extends SimpleChannelInboundHandler<HttpObject> {
-
-    @NonNull
-    private final String url;
 
     private final Channel inboundChannel;
 
@@ -60,23 +62,28 @@ public class Download extends SimpleChannelInboundHandler<HttpObject> {
                     }
                 }
             }
+            response = new DefaultHttpResponse(HTTP_1_1, OK);
+            response.headers().set(TRANSFER_ENCODING, CHUNKED);
+            response.headers().set(HttpHeaderNames.CONNECTION, KEEP_ALIVE);
+            response.headers().set(HttpHeaderNames.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
+            response.headers().set(HttpHeaderNames.ACCEPT_RANGES, BYTES);
+            // Write the initial line and the header.
+            inboundChannel.writeAndFlush(response);
         }
         if (msg instanceof HttpContent) {
             HttpContent chunk = (HttpContent) msg;
 
-            log.debug("Downloading");
-
             HttpChunkedInput httpChunkWriter = new HttpChunkedInput(new ChunkedStream(
                     new ByteBufInputStream(chunk.content())
             ));
-            //ctx.writeAndFlush(httpChunkWriter);
+            inboundChannel.write(httpChunkWriter);
 
             if (chunk instanceof LastHttpContent) {
                 log.info("Download stopped");
+                inboundChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
             } else {
-                //log.info(chunk.content().toString(CharsetUtil.UTF_8));
+                inboundChannel.pipeline().get(ChunkedWriteHandler.class).resumeTransfer();
             }
-            //ctx.flush();
         }
     }
 
@@ -84,6 +91,7 @@ public class Download extends SimpleChannelInboundHandler<HttpObject> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         log.error("Playback failed", cause);
+        inboundChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
         ctx.close();
     }
 }

@@ -34,9 +34,9 @@ import java.nio.charset.Charset;
 @RequiredArgsConstructor
 public class AceStreamClientInitializer extends ChannelInitializer<SocketChannel> {
 
-    private static final DelimiterBasedFrameDecoder TELNET_MESSAGE_DECODER = new DelimiterBasedFrameDecoder(8192, Delimiters.lineDelimiter());
-    private static final CommandEncoder COMMAND_ENCODER = new CommandEncoder(Charset.forName("US-ASCII"));
-    private static final EventDecoder EVENT_DECODER = new EventDecoder(Charset.forName("US-ASCII"));
+    private final DelimiterBasedFrameDecoder TELNET_MESSAGE_DECODER = new DelimiterBasedFrameDecoder(8192, Delimiters.lineDelimiter());
+    private final CommandEncoder COMMAND_ENCODER = new CommandEncoder(Charset.forName("US-ASCII"));
+    private final EventDecoder EVENT_DECODER = new EventDecoder(Charset.forName("US-ASCII"));
 
     private final String url;
     private final Channel inboundChannel;
@@ -45,9 +45,9 @@ public class AceStreamClientInitializer extends ChannelInitializer<SocketChannel
     public void initChannel(SocketChannel ch) {
 
         ch.pipeline()
+          .addLast(COMMAND_ENCODER)
           .addLast(TELNET_MESSAGE_DECODER)
           .addLast(EVENT_DECODER)
-          .addLast(COMMAND_ENCODER)
           .addLast(new Handshake())
           .addLast(new LoadAsync(url, inboundChannel))
         ;

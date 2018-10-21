@@ -32,8 +32,9 @@ public class JAceHttpServer {
                     .group(masterGroup, slaveGroup)
                     .channel(NioServerSocketChannel.class)
                     .childHandler(new JAceHttpInitializer())
-                    .option(ChannelOption.SO_BACKLOG, 128)
-                    .childOption(ChannelOption.SO_KEEPALIVE, true);
+                    //.option(ChannelOption.SO_BACKLOG, 128)
+                    .childOption(ChannelOption.SO_KEEPALIVE, true)
+                    ;
 
             channel = bootstrap.bind(PORT).sync();
 
