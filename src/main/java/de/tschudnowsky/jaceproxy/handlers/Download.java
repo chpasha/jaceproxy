@@ -15,14 +15,13 @@
  */
 package de.tschudnowsky.jaceproxy.handlers;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
-import io.netty.channel.Channel;
+import io.netty.channel.*;
 import io.netty.channel.ChannelHandler.Sharable;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.stream.ChunkedInput;
 import io.netty.handler.stream.ChunkedStream;
-import io.netty.handler.stream.ChunkedWriteHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -48,7 +47,7 @@ public class Download extends SimpleChannelInboundHandler<HttpObject> {
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
+    public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception {
         if (msg instanceof HttpResponse) {
             HttpResponse response = (HttpResponse) msg;
 
@@ -67,22 +66,20 @@ public class Download extends SimpleChannelInboundHandler<HttpObject> {
             response.headers().set(HttpHeaderNames.CONNECTION, KEEP_ALIVE);
             response.headers().set(HttpHeaderNames.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
             response.headers().set(HttpHeaderNames.ACCEPT_RANGES, BYTES);
-            // Write the initial line and the header.
+
             inboundChannel.writeAndFlush(response);
         }
         if (msg instanceof HttpContent) {
             HttpContent chunk = (HttpContent) msg;
 
-            HttpChunkedInput httpChunkWriter = new HttpChunkedInput(new ChunkedStream(
-                    new ByteBufInputStream(chunk.content())
-            ));
-            inboundChannel.write(httpChunkWriter);
-
+            ChunkedInput<ByteBuf> chunkedInput = new ChunkedStream(new ByteBufInputStream(chunk.content()));
+            inboundChannel.writeAndFlush(chunkedInput);
             if (chunk instanceof LastHttpContent) {
                 log.info("Download stopped");
                 inboundChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
             } else {
-                inboundChannel.pipeline().get(ChunkedWriteHandler.class).resumeTransfer();
+                // log.info(chunk.content().toString(CharsetUtil.UTF_8));
+                //inboundChannel.pipeline().get(ChunkedWriteHandler.class).resumeTransfer();
             }
         }
     }

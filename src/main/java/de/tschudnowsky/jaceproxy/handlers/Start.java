@@ -83,8 +83,8 @@ public class Start extends SimpleChannelInboundHandler<Event> {
                  @Override
                  protected void initChannel(SocketChannel ch) {
                      ChannelPipeline pipeline = ch.pipeline();
-                     pipeline.addLast(new HttpClientCodec());
-                     pipeline.addLast(new Download(inboundChannel));
+                     pipeline.addLast(new HttpClientCodec())
+                             .addLast(new Download(inboundChannel));
                  }
              });
             ChannelFuture f = b.connect(SocketUtils.socketAddress(host, port));
