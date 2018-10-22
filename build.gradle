@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'io.franzbecker.gradle-lombok' version '1.14'
+    id 'com.github.johnrengelman.shadow' version '4.0.1'
 }
 
 repositories {
@@ -22,10 +23,10 @@ jar {
     manifest {
         attributes "Main-Class": "de.tschudnowsky.jaceproxy.JAceHttpServer"
     }
+}
 
-    from {
-        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
-    }
+shadowJar {
+    exclude '*.txt'
 }
 
 dependencies {
