@@ -17,10 +17,13 @@ package de.tschudnowsky.jaceproxy;
 
 import de.tschudnowsky.jaceproxy.api.CommandEncoder;
 import de.tschudnowsky.jaceproxy.api.EventDecoder;
+import de.tschudnowsky.jaceproxy.api.EventLogger;
 import de.tschudnowsky.jaceproxy.api.commands.LoadAsyncCommand;
 import de.tschudnowsky.jaceproxy.handlers.Handshake;
 import de.tschudnowsky.jaceproxy.handlers.LoadAsync;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.Delimiters;
@@ -33,9 +36,7 @@ import java.nio.charset.Charset;
 @RequiredArgsConstructor
 public class AceStreamClientInitializer extends ChannelInitializer<SocketChannel> {
 
-    private final DelimiterBasedFrameDecoder TELNET_MESSAGE_DECODER = new DelimiterBasedFrameDecoder(8192, Delimiters.lineDelimiter());
-    private final CommandEncoder COMMAND_ENCODER = new CommandEncoder(Charset.forName("US-ASCII"));
-    private final EventDecoder EVENT_DECODER = new EventDecoder(Charset.forName("US-ASCII"));
+    public static final String TELNET_ENCODING = "US-ASCII";
 
     private final LoadAsyncCommand loadCommand;
     private final Channel inboundChannel;
@@ -44,9 +45,10 @@ public class AceStreamClientInitializer extends ChannelInitializer<SocketChannel
     public void initChannel(SocketChannel ch) {
 
         ch.pipeline()
-          .addLast(COMMAND_ENCODER)
-          .addLast(TELNET_MESSAGE_DECODER)
-          .addLast(EVENT_DECODER)
+          .addLast(new CommandEncoder(Charset.forName("US-ASCII")))
+          .addLast(new DelimiterBasedFrameDecoder(8192, Delimiters.lineDelimiter()))
+          .addLast(new EventDecoder(Charset.forName(TELNET_ENCODING)))
+          .addLast(new EventLogger())
           .addLast(new Handshake())
           .addLast(new LoadAsync(loadCommand, inboundChannel))
         ;
