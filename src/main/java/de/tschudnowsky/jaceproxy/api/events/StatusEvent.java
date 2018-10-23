@@ -34,11 +34,11 @@ public class StatusEvent extends EventImpl {
     }
 
     private String downloading(String[] segments) {
-        return String.format("Downloading: ⇩ %s Kb/s (∑ %dMb), ⇧ %s Kb/s (∑ %dMb), Peers %s",
-                 segments[2], toMb(segments[7]), segments[4], toMb(segments[9]), segments[5]);
+        return String.format("Downloading: ⇩ %s Kb/s ( ∑ %,dMb ), ⇧ %s Kb/s ( ∑ %,dMb ), Peers %s",
+                 segments[2], byteToMb(segments[7]), segments[4], byteToMb(segments[9]), segments[5]);
     }
 
-    private int toMb(String value) {
+    private int byteToMb(String value) {
         try {
             return Integer.parseInt(value) / (1024 * 1024);
         } catch (NumberFormatException e) {
