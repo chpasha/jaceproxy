@@ -21,8 +21,7 @@ public class StatusEvent extends EventImpl {
         String[] segments = status.split(";");
         switch (segments[0]) {
             case "main:buf":
-                //TODO buffering has no peers
-                return downloading(ArrayUtils.subarray(segments, 1, segments.length));
+                return buffering(ArrayUtils.subarray(segments, 1, segments.length));
             case "main:dl":
                 return downloading(ArrayUtils.subarray(segments, 1, segments.length));
 
@@ -30,24 +29,20 @@ public class StatusEvent extends EventImpl {
         return null;
     }
 
-    private String downloading(String[] segments) {
-        String newLine = "\r\n";
-        return new StringBuilder(newLine)
-                .append("Progress: ").append(segments[0]).append("%").append(newLine)
-                .append("Download: ").append(segments[2]).append(" Kb/sec").append(newLine)
-                .append("Upload: ").append(segments[4]).append(" Kb/sec").append(newLine)
-                .append("Peers: ").append(segments[5]).append(newLine)
-                //.append("Downloaded: ").append(toMb(segments[7])).append(newLine)
-                //.append("Uploaded: ").append(toMb(segments[9])).append(newLine)
-                .toString();
+    private String buffering(String[] segments) {
+        return String.format("Buffering: %s%%", segments[0]);
     }
 
-    /*private Object toMb(String value) {
+    private String downloading(String[] segments) {
+        return String.format("Downloading: ⇩ %s Kb/s (∑ %dMb), ⇧ %s Kb/s (∑ %dMb), Peers %s",
+                 segments[2], toMb(segments[7]), segments[4], toMb(segments[9]), segments[5]);
+    }
+
+    private int toMb(String value) {
         try {
-            float val = Float.parseFloat(value);
-            return val / 1024;
+            return Integer.parseInt(value) / (1024 * 1024);
         } catch (NumberFormatException e) {
-            return value;
+            return 0;
         }
-    }*/
+    }
 }

@@ -64,12 +64,12 @@ public class Download extends SimpleChannelInboundHandler<HttpObject> {
 
     private void sendHttpResponse(HttpResponse msg) {
         HttpResponse response = msg;
-        log.info("STATUS: {}", response.status());
-        log.info("VERSION: {}", response.protocolVersion());
+        log.debug("STATUS: {}", response.status());
+        log.debug("VERSION: {}", response.protocolVersion());
         if (!response.headers().isEmpty()) {
             for (CharSequence name : response.headers().names()) {
                 for (CharSequence value : response.headers().getAll(name)) {
-                    log.info("HEADER: {} = {}", name, value);
+                    log.debug("HEADER: {} = {}", name, value);
                 }
             }
         }
