@@ -16,24 +16,23 @@
 package de.tschudnowsky.jaceproxy.handlers;
 
 import de.tschudnowsky.jaceproxy.api.commands.ShutdownCommand;
-import de.tschudnowsky.jaceproxy.api.commands.StartTorrentCommand;
+import de.tschudnowsky.jaceproxy.api.commands.StartCommand;
 import de.tschudnowsky.jaceproxy.api.commands.StopCommand;
 import de.tschudnowsky.jaceproxy.api.events.Event;
-import de.tschudnowsky.jaceproxy.api.events.LoadAsyncResponseEvent;
 import de.tschudnowsky.jaceproxy.api.events.StartPlayEvent;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.timeout.ReadTimeoutException;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.internal.SocketUtils;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;
-
-import static java.util.Collections.singletonList;
 
 
 /**
@@ -45,11 +44,9 @@ import static java.util.Collections.singletonList;
 public class Start extends SimpleChannelInboundHandler<Event> {
 
     @NonNull
-    private final LoadAsyncResponseEvent.Response loadAsyncResponse;
+    private final StartCommand startCommand;
 
     @NonNull
-    private final String url;
-
     private final Channel inboundChannel;
 
 
@@ -60,18 +57,7 @@ public class Start extends SimpleChannelInboundHandler<Event> {
             log.warn("Inbound channel closed, stopping ace client");
             stopAceClient(ctx);
         });
-
-        LoadAsyncResponseEvent.TransportFile transportFile = loadAsyncResponse.getFiles().get(0);
-        StartTorrentCommand startCommand = new StartTorrentCommand(url, singletonList(0), transportFile.getStreamId());
-        ctx.writeAndFlush(startCommand)
-           .sync();
-    }
-
-    private void stopAceClient(ChannelHandlerContext ctx) {
-        ctx.write(new StopCommand());
-        ctx.write(new ShutdownCommand());
-        ctx.flush();
-        ctx.close();
+        ctx.writeAndFlush(startCommand).sync();
     }
 
     @Override
@@ -98,18 +84,25 @@ public class Start extends SimpleChannelInboundHandler<Event> {
                  protected void initChannel(SocketChannel ch) {
                      ChannelPipeline pipeline = ch.pipeline();
                      pipeline.addLast(new HttpClientCodec())
+                             //todo test
+                             .addLast(new ReadTimeoutHandler(30))
                              .addLast(new Download(inboundChannel));
                  }
-             });
+             })
+            //TODO test
+            //.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, ??)
+            //.option(ChannelOption.SO_TIMEOUT, ??)
+            ;
             ChannelFuture f = b.connect(SocketUtils.socketAddress(host, port));
             //Channel channel = f.sync().channel();
             f.addListener((ChannelFutureListener) future -> {
                 if (future.isSuccess()) {
-                    // connection complete start to read first data
                     HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, uri.getPath());
                     f.channel().writeAndFlush(request);
                 } else {
                     f.channel().close();
+                    log.error("Failed to download {}", url);
+                    stopAceClient(ctx);
                 }
             });
         } catch (Exception e) {
@@ -121,7 +114,17 @@ public class Start extends SimpleChannelInboundHandler<Event> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.error("Start failed", cause);
+        log.error("", cause);
+        if (cause instanceof ReadTimeoutException) {
+
+        }
         stopAceClient(ctx);
+    }
+
+    private void stopAceClient(ChannelHandlerContext ctx) {
+        ctx.write(new StopCommand());
+        ctx.write(new ShutdownCommand());
+        ctx.flush();
+        ctx.close();
     }
 }

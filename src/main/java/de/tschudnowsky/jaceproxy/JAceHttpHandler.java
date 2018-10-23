@@ -1,14 +1,21 @@
 package de.tschudnowsky.jaceproxy;
 
+import de.tschudnowsky.jaceproxy.api.commands.LoadAsyncCommand;
+import de.tschudnowsky.jaceproxy.api.commands.LoadAsyncContentIDCommand;
+import de.tschudnowsky.jaceproxy.api.commands.LoadAsyncInfohashCommand;
+import de.tschudnowsky.jaceproxy.api.commands.LoadAsyncTorrentCommand;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.LastHttpContent;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 
 import static io.netty.buffer.Unpooled.copiedBuffer;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -19,7 +26,7 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
  * Time: 19:03
  */
 @Slf4j
-public class JAceHttpHandler extends ChannelInboundHandlerAdapter {
+public class JAceHttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
 
     private static final String HOST = System.getProperty("host", "127.0.0.1");
     private static final int PORT = Integer.parseInt(System.getProperty("port", "62062"));
@@ -27,24 +34,51 @@ public class JAceHttpHandler extends ChannelInboundHandlerAdapter {
     private Channel outboundChannel;
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        log.info(msg.toString());
-        if (msg instanceof FullHttpRequest) {
+    protected void channelRead0(ChannelHandlerContext ctx, HttpRequest request) throws Exception {
 
-            //TODO parse request
-            final FullHttpRequest request = (FullHttpRequest) msg;
+        LoadAsyncCommand command = createLoadCommandFromRequest(request.uri());
+        final Channel inboundChannel = ctx.channel();
+        Bootstrap b = new Bootstrap();
+        b.group(inboundChannel.eventLoop())
+         .channel(ctx.channel().getClass())
+         .handler(new AceStreamClientInitializer(command, inboundChannel));
 
-            final Channel inboundChannel = ctx.channel();
+        // Start the connection attempt.
+        ChannelFuture f = b.connect(HOST, PORT);
+        f.addListener((ChannelFutureListener) future -> {
+            if (!future.isSuccess()) {
+                exceptionCaught(ctx, new IllegalStateException("Could not connect to acestream engine on " + HOST + ":" + PORT));
+            }
+        });
+        outboundChannel = f.channel();
+    }
 
-            Bootstrap b = new Bootstrap();
-            b.group(inboundChannel.eventLoop())
-             .channel(ctx.channel().getClass())
-             .handler(new AceStreamClientInitializer("http://91.92.66.82/trash/ttv-list/acelive/ttv_23136.acelive", inboundChannel));
-
-            // Start the connection attempt.
-            ChannelFuture f = b.connect(HOST, PORT);
-            outboundChannel = f.channel();
+    @NotNull
+    private LoadAsyncCommand createLoadCommandFromRequest(String url) throws IllegalArgumentException, UnsupportedEncodingException {
+         /*
+          /torrent/http%3A%2F%2F91.92.66.82%2Ftrash%2Fttv-list%2Facelive%2Fttv_cid_0b75ac.acelive/stream.mp4
+          TODO direct_url data efile_url
+        */
+        String[] segments = url.split("/");
+        if (segments.length < 3) {
+            throw new IllegalArgumentException("Too few path variables in url " + url);
         }
+        String command = segments[1];
+        String param = segments[2];
+        switch (command) {
+            case "url":
+            case "torrent":
+                String torrentUrl = URLDecoder.decode(param, "UTF-8");
+                return new LoadAsyncTorrentCommand(torrentUrl);
+            case "content_id":
+            case "pid":
+                String pid = param;
+                return new LoadAsyncContentIDCommand(pid);
+            case "infohash":
+                String infohash = param;
+                return new LoadAsyncInfohashCommand(infohash);
+        }
+        throw new IllegalArgumentException("Unsupported url " + url);
     }
 
     @Override

@@ -44,10 +44,11 @@ public class CommandEncoder extends MessageToMessageEncoder<Command> {
         if (command == null) {
             return;
         }
-        log.debug("Sending command: {}", command);
         CommandMapper<Command> mapper = CommandMapperFactory.getCommandMapper(command);
         if (mapper != null) {
-            out.add(ByteBufUtil.encodeString(ctx.alloc(), CharBuffer.wrap(mapper.writeAsString(command) + "\r\n"), charset));
+            CharSequence commandAsString = mapper.writeAsString(command);
+            log.debug("Sending command: {}", commandAsString);
+            out.add(ByteBufUtil.encodeString(ctx.alloc(), CharBuffer.wrap(commandAsString + "\r\n"), charset));
         } else {
             log.warn("No mapper found for command {}", command);
         }

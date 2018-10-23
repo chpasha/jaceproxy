@@ -17,6 +17,7 @@ package de.tschudnowsky.jaceproxy;
 
 import de.tschudnowsky.jaceproxy.api.CommandEncoder;
 import de.tschudnowsky.jaceproxy.api.EventDecoder;
+import de.tschudnowsky.jaceproxy.api.commands.LoadAsyncCommand;
 import de.tschudnowsky.jaceproxy.handlers.Handshake;
 import de.tschudnowsky.jaceproxy.handlers.LoadAsync;
 import io.netty.channel.*;
@@ -36,7 +37,7 @@ public class AceStreamClientInitializer extends ChannelInitializer<SocketChannel
     private final CommandEncoder COMMAND_ENCODER = new CommandEncoder(Charset.forName("US-ASCII"));
     private final EventDecoder EVENT_DECODER = new EventDecoder(Charset.forName("US-ASCII"));
 
-    private final String url;
+    private final LoadAsyncCommand loadCommand;
     private final Channel inboundChannel;
 
     @Override
@@ -47,7 +48,7 @@ public class AceStreamClientInitializer extends ChannelInitializer<SocketChannel
           .addLast(TELNET_MESSAGE_DECODER)
           .addLast(EVENT_DECODER)
           .addLast(new Handshake())
-          .addLast(new LoadAsync(url, inboundChannel))
+          .addLast(new LoadAsync(loadCommand, inboundChannel))
         ;
     }
 

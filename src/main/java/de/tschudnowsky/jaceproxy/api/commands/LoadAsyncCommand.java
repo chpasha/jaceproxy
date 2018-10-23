@@ -20,7 +20,7 @@ public abstract class LoadAsyncCommand extends CommandImpl {
 
     private final Type type;
 
-    enum Type {
+    public enum Type {
         TORRENT, INFOHASH, RAW, PID
     }
 

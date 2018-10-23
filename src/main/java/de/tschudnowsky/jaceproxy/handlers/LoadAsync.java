@@ -15,7 +15,7 @@
  */
 package de.tschudnowsky.jaceproxy.handlers;
 
-import de.tschudnowsky.jaceproxy.api.commands.LoadAsyncTorrentCommand;
+import de.tschudnowsky.jaceproxy.api.commands.*;
 import de.tschudnowsky.jaceproxy.api.events.Event;
 import de.tschudnowsky.jaceproxy.api.events.LoadAsyncResponseEvent;
 import de.tschudnowsky.jaceproxy.api.events.StatusEvent;
@@ -23,8 +23,14 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
+
+import static java.util.Collections.singletonList;
 
 
 /**
@@ -37,17 +43,18 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class LoadAsync extends SimpleChannelInboundHandler<Event> {
 
-    private final String url;
+    @NonNull
+    private final LoadAsyncCommand loadAsyncCommand;
+
+    @NonNull
     private final Channel inboundChannel;
 
     private int requestId;
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        LoadAsyncTorrentCommand loadAsync = new LoadAsyncTorrentCommand(url);
-        requestId = loadAsync.getRequestId();
-        ctx.writeAndFlush(loadAsync)
-           .sync();
+        requestId = loadAsyncCommand.getRequestId();
+        ctx.writeAndFlush(loadAsyncCommand).sync();
     }
 
     @Override
@@ -62,9 +69,28 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
         }
 
         LoadAsyncResponseEvent responseEvent = (LoadAsyncResponseEvent) event;
-        ctx.pipeline().addLast(new Start(responseEvent.getResponse(), url, inboundChannel));
+        StartCommand startCommand = createStartCommand(responseEvent.getResponse());
+        ctx.pipeline().addLast(new Start(startCommand, inboundChannel));
         ctx.pipeline().remove(this);
         ctx.fireChannelActive();
+    }
+
+    @NotNull
+    private StartCommand createStartCommand(LoadAsyncResponseEvent.Response loadAsyncResponse) {
+        LoadAsyncResponseEvent.TransportFile transportFile = loadAsyncResponse.getFiles().get(0);
+        int streamId = transportFile.getStreamId();
+        List<Integer> fileIndexes = singletonList(0);
+        switch (loadAsyncCommand.getType()) {
+            case TORRENT:
+                return new StartTorrentCommand(((LoadAsyncTorrentCommand) loadAsyncCommand).getTorrentUrl(), fileIndexes, streamId);
+            case INFOHASH:
+                return new StartInfohashCommand(((LoadAsyncInfohashCommand) loadAsyncCommand).getInfohash(), fileIndexes);
+            case RAW:
+                return new StartRawCommand(((LoadAsyncRawTransportFileCommand) loadAsyncCommand).getTransportFileAsBase64(), fileIndexes);
+            case PID:
+                return new StartPidCommand(((LoadAsyncContentIDCommand) loadAsyncCommand).getContentId(), fileIndexes);
+        }
+        throw new IllegalArgumentException(loadAsyncCommand.getClass().getSimpleName() + " is not supported yet");
     }
 
     private boolean notValidResponse(Event event) {
@@ -90,7 +116,7 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.error("LoadAsync Failed failed", cause);
+        log.error("LoadAsync failed", cause);
         ctx.close();
     }
 }

@@ -30,7 +30,6 @@ public class EventDecoder extends MessageToMessageDecoder<ByteBuf> {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) {
         String rawValue = msg.toString(charset);
-        log.debug("Event received: {}", rawValue);
         EventMapper<?> mapper = EventMapperFactory.findMapper(rawValue);
         if (mapper != null) {
             //Strip out event name

@@ -1,7 +1,10 @@
 - detect timeout
 - restart on timeout
-- play same channel two clients
-- external config
-- exclude jackson
+- respond to shutdown event
+- test cases when acestream not running or stopped working abruptly
+- parse requests contentid, torrent, etc
 - decode status line e.g. download speed, peers etc
-- make log readable
+- external config
+- play same channel two clients?
+- play certain files from torrent with multiple files?
+- get rid of libs?

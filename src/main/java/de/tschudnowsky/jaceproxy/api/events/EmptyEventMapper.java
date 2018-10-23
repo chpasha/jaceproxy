@@ -1,22 +1,26 @@
 package de.tschudnowsky.jaceproxy.api.events;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.function.BiConsumer;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * User: pavel
  * Date: 07.10.18
  * Time: 13:36
  */
-public class EmptyEventMapper<T extends Event> extends EventMapperImpl<T> {
+@RequiredArgsConstructor
+@Slf4j
+public class EmptyEventMapper<T extends Event> implements EventMapper<T> {
 
-    EmptyEventMapper(Class<T> clazz) {
-        super(clazz);
-    }
+    private final Class<T> clazz;
 
     @Override
-    protected Map<String, BiConsumer<T, String>> getPropertyMappings() {
-        return Collections.emptyMap();
+    public T readValue(String rawValue) {
+        try {
+            return clazz.newInstance();
+        } catch (Exception e) {
+            log.error("Instantiation of " + clazz, e);
+        }
+        return null;
     }
 }
