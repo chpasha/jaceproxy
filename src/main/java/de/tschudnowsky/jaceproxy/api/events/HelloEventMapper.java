@@ -13,6 +13,7 @@ public class HelloEventMapper extends EventMapperImpl<HelloEvent>  {
 
     private final Map<String, BiConsumer<HelloEvent, String>> map = new HashMap<String, BiConsumer<HelloEvent, String>>() {
         {
+            put("bmode", HelloEvent::setBmode);
             put("version", HelloEvent::setEngineVersion);
             put("version_code", HelloEvent::setVersionCode);
             put("key", HelloEvent::setRequestKey);

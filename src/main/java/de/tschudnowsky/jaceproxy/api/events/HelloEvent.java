@@ -16,6 +16,7 @@ public class HelloEvent extends EventImpl {
     private String versionCode;
     private String requestKey;
     private Integer httpPort;
+    private String bmode;
 
     public HelloEvent() {
     }

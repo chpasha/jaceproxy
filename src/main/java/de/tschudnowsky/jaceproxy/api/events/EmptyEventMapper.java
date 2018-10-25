@@ -13,11 +13,15 @@ import lombok.extern.slf4j.Slf4j;
 public class EmptyEventMapper<T extends Event> implements EventMapper<T> {
 
     private final Class<T> clazz;
+    private T instance;
 
     @Override
     public T readValue(String rawValue) {
         try {
-            return clazz.newInstance();
+            if (instance == null) {
+                instance = clazz.newInstance();
+            }
+            return instance;
         } catch (Exception e) {
             log.error("Instantiation of " + clazz, e);
         }
