@@ -54,7 +54,7 @@ public class Download extends SimpleChannelInboundHandler<HttpObject> {
                 sendHttpResponse((HttpResponse) msg);
             }
             if (msg instanceof HttpContent) {
-                streamHttpContent((HttpContent) msg);
+                streamHttpContent((HttpContent) msg, ctx);
             }
         } else {
             log.warn("Inbound channel inactive, stopping streaming");
@@ -81,13 +81,14 @@ public class Download extends SimpleChannelInboundHandler<HttpObject> {
         inboundChannel.writeAndFlush(response);
     }
 
-    private void streamHttpContent(HttpContent msg) {
+    private void streamHttpContent(HttpContent msg, ChannelHandlerContext ctx) {
         ChunkedInput<ByteBuf> chunkedInput = new ChunkedStream(new ByteBufInputStream(msg.content()));
         inboundChannel.writeAndFlush(chunkedInput);
         if (msg instanceof LastHttpContent) {
             log.info("Download stopped");
             inboundChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
-        } 
+            ctx.close();
+        }
     }
 
 
