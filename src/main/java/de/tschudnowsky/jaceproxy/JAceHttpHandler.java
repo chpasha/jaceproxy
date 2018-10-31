@@ -28,6 +28,7 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 @Slf4j
 public class JAceHttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
 
+    //private static final String HOST = System.getProperty("host", "192.168.9.20");
     private static final String HOST = System.getProperty("host", "127.0.0.1");
     private static final int PORT = Integer.parseInt(System.getProperty("port", "62062"));
 
@@ -56,7 +57,6 @@ public class JAceHttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
     @NotNull
     private LoadAsyncCommand createLoadCommandFromRequest(String url) throws IllegalArgumentException, UnsupportedEncodingException {
          /*
-          /torrent/http%3A%2F%2F91.92.66.82%2Ftrash%2Fttv-list%2Facelive%2Fttv_cid_0b75ac.acelive/stream.mp4
           TODO direct_url data efile_url
         */
         String[] segments = url.split("/");
