@@ -8,9 +8,11 @@ import org.json.JSONObject;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static de.tschudnowsky.jaceproxy.api.Message.PROPERTY_SEPARATOR;
+import static de.tschudnowsky.jaceproxy.api.events.LoadAsyncResponseEvent.TransportFileContentDescription.ERROR_RETRIEVING;
 
 /**
  * User: pavel
@@ -19,6 +21,11 @@ import static de.tschudnowsky.jaceproxy.api.Message.PROPERTY_SEPARATOR;
  */
 @Slf4j
 public class LoadAsyncResponseEventMapper implements EventMapper<LoadAsyncResponseEvent> {
+
+    private static final String CHECKSUM = "checksum";
+    private static final String INFOHASH = "infohash";
+    private static final String STATUS = "status";
+    private static final String FILES = "files";
 
     @Override
     public LoadAsyncResponseEvent readValue(String rawValue) {
@@ -38,10 +45,10 @@ public class LoadAsyncResponseEventMapper implements EventMapper<LoadAsyncRespon
     private LoadAsyncResponseEvent.Response createFromString(String value) throws UnsupportedEncodingException {
         JSONObject json = new JSONObject(value);
         LoadAsyncResponseEvent.Response r = new LoadAsyncResponseEvent.Response();
-        r.setChecksum(json.getString("checksum"));
-        r.setInfohash(json.getString("infohash"));
-        r.setStatus(toStatus(json.getInt("status")));
-        r.setFiles(toFiles(json.getJSONArray("files")));
+        r.setChecksum(json.has(CHECKSUM) ? json.getString(CHECKSUM) : null);
+        r.setInfohash(json.has(INFOHASH) ? json.getString(INFOHASH) : null);
+        r.setStatus(json.has(STATUS) ? toStatus(json.getInt(STATUS)) : ERROR_RETRIEVING);
+        r.setFiles(json.has(FILES) ? toFiles(json.getJSONArray(FILES)) : Collections.emptyList());
         return r;
     }
 
