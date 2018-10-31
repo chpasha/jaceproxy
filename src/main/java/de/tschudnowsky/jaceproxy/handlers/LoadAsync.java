@@ -78,11 +78,16 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
     @NotNull
     private StartCommand createStartCommand(LoadAsyncResponseEvent.Response loadAsyncResponse) {
         LoadAsyncResponseEvent.TransportFile transportFile = loadAsyncResponse.getFiles().get(0);
-        int streamId = transportFile.getStreamId();
+        log.info("Starting {}", transportFile.getFilename());
         List<Integer> fileIndexes = singletonList(0);
+        // TODO I have a feeling - there is no point in any Start command except for StartInfohash since we always receive infohash
+        // as LoadAsyncResponse - test if there are any exceptions
+        if (loadAsyncResponse.getInfohash() != null) {
+            return new StartInfohashCommand(loadAsyncResponse.getInfohash(), fileIndexes);
+        }
         switch (loadAsyncCommand.getType()) {
             case TORRENT:
-                return new StartTorrentCommand(((LoadAsyncTorrentCommand) loadAsyncCommand).getTorrentUrl(), fileIndexes, streamId);
+                return new StartTorrentCommand(((LoadAsyncTorrentCommand) loadAsyncCommand).getTorrentUrl(), fileIndexes, transportFile.getStreamId());
             case INFOHASH:
                 return new StartInfohashCommand(((LoadAsyncInfohashCommand) loadAsyncCommand).getInfohash(), fileIndexes);
             case RAW:
