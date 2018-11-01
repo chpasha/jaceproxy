@@ -48,7 +48,7 @@ public class AceStreamUrlInterceptor extends ChannelOutboundHandlerAdapter {
                  protected void initChannel(SocketChannel ch) {
                      ChannelPipeline pipeline = ch.pipeline();
                      pipeline.addLast(new HttpClientCodec())
-                             .addLast(new ReadTimeoutHandler(3))
+                             .addLast(new ReadTimeoutHandler(30))
                              .addLast(new VideoStreamHandler(playerChannel));
                  }
              })
