@@ -81,7 +81,7 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
     @NotNull
     private StartCommand createStartCommand(LoadAsyncResponseEvent.Response loadAsyncResponse) {
         LoadAsyncResponseEvent.TransportFile transportFile = loadAsyncResponse.getFiles().get(0);
-        MDC.put("FILENAME", transportFile.getFilename());
+        MDC.put("FILENAME", String.format("[%s]",transportFile.getFilename()));
         List<Integer> fileIndexes = singletonList(0);
         // TODO I have a feeling - there is no point in any Start command except for StartInfohash since we always receive infohash
         // as LoadAsyncResponse - test if there are any exceptions
