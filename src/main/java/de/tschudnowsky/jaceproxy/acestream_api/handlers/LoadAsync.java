@@ -27,6 +27,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.MDC;
 
 import java.util.List;
 
@@ -80,7 +81,7 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
     @NotNull
     private StartCommand createStartCommand(LoadAsyncResponseEvent.Response loadAsyncResponse) {
         LoadAsyncResponseEvent.TransportFile transportFile = loadAsyncResponse.getFiles().get(0);
-        log.info("Starting {}", transportFile.getFilename());
+        MDC.put("FILENAME", transportFile.getFilename());
         List<Integer> fileIndexes = singletonList(0);
         // TODO I have a feeling - there is no point in any Start command except for StartInfohash since we always receive infohash
         // as LoadAsyncResponse - test if there are any exceptions
