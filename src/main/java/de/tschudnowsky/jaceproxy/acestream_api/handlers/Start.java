@@ -20,19 +20,18 @@ import de.tschudnowsky.jaceproxy.acestream_api.commands.StartCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.StopCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.events.Event;
 import de.tschudnowsky.jaceproxy.acestream_api.events.StartPlayEvent;
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.codec.http.*;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.ReadTimeoutException;
-import io.netty.handler.timeout.ReadTimeoutHandler;
-import io.netty.util.internal.SocketUtils;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 
 
 /**
@@ -61,56 +60,13 @@ public class Start extends SimpleChannelInboundHandler<Event> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Event event) {
+    protected void channelRead0(ChannelHandlerContext ctx, Event event) throws URISyntaxException {
         if (event instanceof StartPlayEvent) {
             StartPlayEvent startPlay = (StartPlayEvent) event;
             ctx.pipeline().remove(this);
-            stream(ctx, startPlay.getUrl());
+            inboundChannel.writeAndFlush(new URI(startPlay.getUrl()));
         }
     }
-
-    private void stream(ChannelHandlerContext ctx, String url) {
-        try {
-            URI uri = new URI(url);
-            String host = uri.getHost();
-            int port = uri.getPort();
-
-            Bootstrap b = new Bootstrap();
-            b.group(inboundChannel.eventLoop())
-             .channel(ctx.channel().getClass())
-             .handler(new ChannelInitializer<SocketChannel>() {
-
-                 @Override
-                 protected void initChannel(SocketChannel ch) {
-                     ChannelPipeline pipeline = ch.pipeline();
-                     pipeline.addLast(new HttpClientCodec())
-                             //todo test
-                             .addLast(new ReadTimeoutHandler(30))
-                             .addLast(new Download(inboundChannel));
-                 }
-             })
-            //TODO test
-            //.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, ??)
-            //.option(ChannelOption.SO_TIMEOUT, ??)
-            ;
-            ChannelFuture f = b.connect(SocketUtils.socketAddress(host, port));
-            //Channel channel = f.sync().channel();
-            f.addListener((ChannelFutureListener) future -> {
-                if (future.isSuccess()) {
-                    HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, uri.getPath());
-                    f.channel().writeAndFlush(request);
-                } else {
-                    f.channel().close();
-                    log.error("Failed to download {}", url);
-                    stopAceClient(ctx);
-                }
-            });
-        } catch (Exception e) {
-            log.error("", e);
-            stopAceClient(ctx);
-        }
-    }
-
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {

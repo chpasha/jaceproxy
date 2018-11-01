@@ -13,11 +13,12 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package de.tschudnowsky.jaceproxy.acestream_api.handlers;
+package de.tschudnowsky.jaceproxy.proxy;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -39,12 +40,13 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 @Sharable
 @Slf4j
 @RequiredArgsConstructor
-public class Download extends SimpleChannelInboundHandler<HttpObject> {
+public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> {
 
     private final Channel inboundChannel;
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
+        inboundChannel.closeFuture().addListener((ChannelFutureListener) future -> inboundChannelClosed(ctx));
     }
 
     @Override
@@ -57,9 +59,13 @@ public class Download extends SimpleChannelInboundHandler<HttpObject> {
                 streamHttpContent((HttpContent) msg, ctx);
             }
         } else {
-            log.warn("Inbound channel inactive, stopping streaming");
-            ctx.close();
+            inboundChannelClosed(ctx);
         }
+    }
+
+    private void inboundChannelClosed(ChannelHandlerContext ctx) {
+        log.warn("Inbound channel closed, stopping streaming");
+        ctx.close();
     }
 
     private void sendHttpResponse(HttpResponse msg) {
@@ -82,12 +88,13 @@ public class Download extends SimpleChannelInboundHandler<HttpObject> {
     }
 
     private void streamHttpContent(HttpContent msg, ChannelHandlerContext ctx) {
-        ChunkedInput<ByteBuf> chunkedInput = new ChunkedStream(new ByteBufInputStream(msg.content()));
-        inboundChannel.writeAndFlush(chunkedInput);
         if (msg instanceof LastHttpContent) {
             log.info("Download stopped");
             inboundChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
             ctx.close();
+        } else {
+            ChunkedInput<ByteBuf> chunkedInput = new ChunkedStream(new ByteBufInputStream(msg.content()));
+            inboundChannel.writeAndFlush(chunkedInput);
         }
     }
 
@@ -95,7 +102,9 @@ public class Download extends SimpleChannelInboundHandler<HttpObject> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         log.error("Playback failed", cause);
-        inboundChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+        if (inboundChannel.isActive()) {
+            inboundChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+        }
         ctx.close();
     }
 }

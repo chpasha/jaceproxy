@@ -19,6 +19,7 @@ public class JAceProxyInitializer extends ChannelInitializer<SocketChannel> {
           .addLast(new HttpServerCodec())
           .addLast(new HttpObjectAggregator(65536))
           .addLast(new ChunkedWriteHandler())
+          .addLast(new AceStreamUrlInterceptor())
           .addLast( new HttpHandler())
         ;
     }

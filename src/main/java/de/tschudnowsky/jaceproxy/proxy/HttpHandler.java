@@ -1,10 +1,7 @@
 package de.tschudnowsky.jaceproxy.proxy;
 
 import de.tschudnowsky.jaceproxy.acestream_api.AceStreamClientInitializer;
-import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncCommand;
-import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncContentIDCommand;
-import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncInfohashCommand;
-import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncTorrentCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.*;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
@@ -89,6 +86,14 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
         }
     }
 
+    void stopAceClient() {
+        if (acestreamChannel  != null && acestreamChannel.isActive()) {
+            acestreamChannel.writeAndFlush(new StopCommand());
+            acestreamChannel.writeAndFlush(new ShutdownCommand())
+                            .addListener(ChannelFutureListener.CLOSE);
+        }
+    }
+
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx,
                                 Throwable cause) {
@@ -103,6 +108,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
                     copiedBuffer(cause.getMessage().getBytes())
             ));
         }
+        stopAceClient();
         closeOnFlush(ctx.channel());
     }
 
@@ -111,7 +117,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
                 cause.getMessage().equals("Connection reset by peer");
     }
 
-    public static void closeOnFlush(Channel ch) {
+    private void closeOnFlush(Channel ch) {
         if (ch.isActive()) {
             ch.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT).addListener(ChannelFutureListener.CLOSE);
         }

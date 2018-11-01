@@ -15,12 +15,10 @@
  */
 package de.tschudnowsky.jaceproxy.acestream_api;
 
-import de.tschudnowsky.jaceproxy.proxy.HttpHandler;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.handlers.Handshake;
 import de.tschudnowsky.jaceproxy.acestream_api.handlers.LoadAsync;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
@@ -34,7 +32,7 @@ import java.nio.charset.Charset;
 @RequiredArgsConstructor
 public class AceStreamClientInitializer extends ChannelInitializer<SocketChannel> {
 
-    public static final String TELNET_ENCODING = "US-ASCII";
+    private static final String TELNET_ENCODING = "US-ASCII";
 
     private final LoadAsyncCommand loadCommand;
     private final Channel inboundChannel;
@@ -50,16 +48,5 @@ public class AceStreamClientInitializer extends ChannelInitializer<SocketChannel
           .addLast(new Handshake())
           .addLast(new LoadAsync(loadCommand, inboundChannel))
         ;
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
-        HttpHandler.closeOnFlush(inboundChannel);
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.error("", cause);
-        HttpHandler.closeOnFlush(ctx.channel());
     }
 }
