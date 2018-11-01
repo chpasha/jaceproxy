@@ -25,6 +25,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.stream.ChunkedInput;
 import io.netty.handler.stream.ChunkedStream;
+import io.netty.handler.timeout.ReadTimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -113,9 +114,13 @@ public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> 
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.error("Playback failed", cause);
-        if (playerChannel.isActive()) {
-            playerChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+        if (cause instanceof ReadTimeoutException && playerChannel.isActive()) {
+            playerChannel.pipeline().get(HttpHandler.class).onReadTimeoutWhileStreaming(playerChannel);
+        } else {
+            log.error("Playback failed", cause);
+            if (playerChannel.isActive()) {
+                playerChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+            }
         }
         ctx.close();
     }

@@ -41,7 +41,6 @@ public class AceStreamUrlInterceptor extends ChannelOutboundHandlerAdapter {
                  protected void initChannel(SocketChannel ch) {
                      ChannelPipeline pipeline = ch.pipeline();
                      pipeline.addLast(new HttpClientCodec())
-                             //todo test
                              .addLast(new ReadTimeoutHandler(30))
                              .addLast(new VideoStreamHandler(playerChannel));
                  }
@@ -59,12 +58,10 @@ public class AceStreamUrlInterceptor extends ChannelOutboundHandlerAdapter {
                 } else {
                     streamChannel.channel().close();
                     log.error("Failed to download {}", uri.toString());
-                    //TODO stopAceClient(ctx);
                 }
             });
         } catch (Exception e) {
             log.error("", e);
-            //TODO stopAceClient(ctx);
         }
     }
 }

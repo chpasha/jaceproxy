@@ -31,24 +31,12 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
     private static final int PORT = Integer.parseInt(System.getProperty("port", "62062"));
 
     private Channel acestreamChannel;
+    private LoadAsyncCommand command;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, HttpRequest request) throws Exception {
-
-        LoadAsyncCommand command = createLoadCommandFromRequest(request.uri());
-        final Channel inboundChannel = ctx.channel();
-        Bootstrap b = new Bootstrap();
-        b.group(inboundChannel.eventLoop())
-         .channel(ctx.channel().getClass())
-         .handler(new AceStreamClientInitializer(command, inboundChannel));
-
-        ChannelFuture f = b.connect(HOST, PORT);
-        f.addListener((ChannelFutureListener) future -> {
-            if (!future.isSuccess()) {
-                exceptionCaught(ctx, new IllegalStateException("Could not connect to acestream engine on " + HOST + ":" + PORT));
-            }
-        });
-        acestreamChannel = f.channel();
+        command = createLoadCommandFromRequest(request.uri());
+        spawnAceStreamConnection(ctx.channel());
     }
 
     @NotNull
@@ -78,14 +66,30 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
         throw new IllegalArgumentException("Unsupported url " + url);
     }
 
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
-        stopAceClient();
+    private void spawnAceStreamConnection(Channel inboundChannel) {
+        Bootstrap b = new Bootstrap();
+        b.group(inboundChannel.eventLoop())
+         .channel(inboundChannel.getClass())
+         .handler(new AceStreamClientInitializer(command, inboundChannel));
+
+        ChannelFuture f = b.connect(HOST, PORT);
+        f.addListener((ChannelFutureListener) future -> {
+            if (!future.isSuccess()) {
+                log.error("Could not connect to acestream engine on {}:{}", HOST, PORT);
+                closeOnFlush(inboundChannel);
+            }
+        });
+        acestreamChannel = f.channel();
     }
 
-    private void stopAceClient() {
-        if (acestreamChannel  != null && acestreamChannel.isActive()) {
-            acestreamChannel.writeAndFlush(new StopCommand());
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        shutdownAceClient();
+    }
+
+    private void shutdownAceClient() {
+        if (acestreamChannel != null && acestreamChannel.isActive()) {
+            stopAceClient();
             acestreamChannel.writeAndFlush(new ShutdownCommand())
                             .addListener(ChannelFutureListener.CLOSE);
         }
@@ -105,7 +109,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
                     copiedBuffer(cause.getMessage().getBytes())
             ));
         }
-        stopAceClient();
+        shutdownAceClient();
         closeOnFlush(ctx.channel());
     }
 
@@ -119,4 +123,17 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
             ch.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT).addListener(ChannelFutureListener.CLOSE);
         }
     }
+
+    void onReadTimeoutWhileStreaming(Channel playerChannel) {
+        log.warn("Timeout reading from acestream, restarting broadcast");
+        stopAceClient();
+        spawnAceStreamConnection(playerChannel);
+    }
+
+    private void stopAceClient() {
+        if (acestreamChannel != null && acestreamChannel.isActive()) {
+            acestreamChannel.writeAndFlush(new StopCommand());
+        }
+    }
+
 }
