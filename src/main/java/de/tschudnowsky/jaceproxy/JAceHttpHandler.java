@@ -1,9 +1,9 @@
 package de.tschudnowsky.jaceproxy;
 
-import de.tschudnowsky.jaceproxy.api.commands.LoadAsyncCommand;
-import de.tschudnowsky.jaceproxy.api.commands.LoadAsyncContentIDCommand;
-import de.tschudnowsky.jaceproxy.api.commands.LoadAsyncInfohashCommand;
-import de.tschudnowsky.jaceproxy.api.commands.LoadAsyncTorrentCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncContentIDCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncInfohashCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncTorrentCommand;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
@@ -32,7 +32,7 @@ public class JAceHttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
     private static final String HOST = System.getProperty("host", "127.0.0.1");
     private static final int PORT = Integer.parseInt(System.getProperty("port", "62062"));
 
-    private Channel outboundChannel;
+    private Channel acestreamChannel;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, HttpRequest request) throws Exception {
@@ -51,7 +51,7 @@ public class JAceHttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
                 exceptionCaught(ctx, new IllegalStateException("Could not connect to acestream engine on " + HOST + ":" + PORT));
             }
         });
-        outboundChannel = f.channel();
+        acestreamChannel = f.channel();
     }
 
     @NotNull
@@ -83,8 +83,8 @@ public class JAceHttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        if (outboundChannel != null) {
-            closeOnFlush(outboundChannel);
+        if (acestreamChannel != null) {
+            closeOnFlush(acestreamChannel);
         }
     }
 

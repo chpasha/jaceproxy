@@ -15,12 +15,12 @@
  */
 package de.tschudnowsky.jaceproxy;
 
-import de.tschudnowsky.jaceproxy.api.CommandEncoder;
-import de.tschudnowsky.jaceproxy.api.EventDecoder;
-import de.tschudnowsky.jaceproxy.api.EventLogger;
-import de.tschudnowsky.jaceproxy.api.commands.LoadAsyncCommand;
-import de.tschudnowsky.jaceproxy.handlers.Handshake;
-import de.tschudnowsky.jaceproxy.handlers.LoadAsync;
+import de.tschudnowsky.jaceproxy.acestream_api.CommandEncoder;
+import de.tschudnowsky.jaceproxy.acestream_api.EventDecoder;
+import de.tschudnowsky.jaceproxy.acestream_api.EventLogger;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.handlers.Handshake;
+import de.tschudnowsky.jaceproxy.acestream_api.handlers.LoadAsync;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
