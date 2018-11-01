@@ -13,11 +13,9 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package de.tschudnowsky.jaceproxy;
+package de.tschudnowsky.jaceproxy.acestream_api;
 
-import de.tschudnowsky.jaceproxy.acestream_api.CommandEncoder;
-import de.tschudnowsky.jaceproxy.acestream_api.EventDecoder;
-import de.tschudnowsky.jaceproxy.acestream_api.EventLogger;
+import de.tschudnowsky.jaceproxy.proxy.HttpHandler;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.handlers.Handshake;
 import de.tschudnowsky.jaceproxy.acestream_api.handlers.LoadAsync;
@@ -56,12 +54,12 @@ public class AceStreamClientInitializer extends ChannelInitializer<SocketChannel
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        JAceHttpHandler.closeOnFlush(inboundChannel);
+        HttpHandler.closeOnFlush(inboundChannel);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         log.error("", cause);
-        JAceHttpHandler.closeOnFlush(ctx.channel());
+        HttpHandler.closeOnFlush(ctx.channel());
     }
 }

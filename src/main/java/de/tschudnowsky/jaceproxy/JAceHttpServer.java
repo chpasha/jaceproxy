@@ -1,5 +1,6 @@
 package de.tschudnowsky.jaceproxy;
 
+import de.tschudnowsky.jaceproxy.proxy.JAceProxyInitializer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -31,7 +32,7 @@ public class JAceHttpServer {
             final ServerBootstrap bootstrap = new ServerBootstrap()
                     .group(masterGroup, slaveGroup)
                     .channel(NioServerSocketChannel.class)
-                    .childHandler(new JAceHttpInitializer())
+                    .childHandler(new JAceProxyInitializer())
                     //.option(ChannelOption.SO_BACKLOG, 128)
                     .childOption(ChannelOption.SO_KEEPALIVE, true)
                     ;

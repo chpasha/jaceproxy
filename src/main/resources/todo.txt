@@ -7,6 +7,7 @@
 - client never stops if ace cannot load transport file
 - on stop in player sometimes exceptions in chunkedwriter invalid ref count,
   maybe because of debug - we miss something while thread suspended
+- EventLogger -> Handler?
 - send SETOPTIONS use_stop_notifications=1 ???
 - maybe ignore useless events, why instantiate classes and map properteis for smth like livepos?
 - channel name in thread name?

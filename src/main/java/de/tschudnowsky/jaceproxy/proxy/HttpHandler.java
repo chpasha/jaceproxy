@@ -1,5 +1,6 @@
-package de.tschudnowsky.jaceproxy;
+package de.tschudnowsky.jaceproxy.proxy;
 
+import de.tschudnowsky.jaceproxy.acestream_api.AceStreamClientInitializer;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncContentIDCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncInfohashCommand;
@@ -26,7 +27,7 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
  * Time: 19:03
  */
 @Slf4j
-public class JAceHttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
+public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
 
     //private static final String HOST = System.getProperty("host", "192.168.9.20");
     private static final String HOST = System.getProperty("host", "127.0.0.1");
@@ -110,7 +111,7 @@ public class JAceHttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
                 cause.getMessage().equals("Connection reset by peer");
     }
 
-    static void closeOnFlush(Channel ch) {
+    public static void closeOnFlush(Channel ch) {
         if (ch.isActive()) {
             ch.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT).addListener(ChannelFutureListener.CLOSE);
         }
