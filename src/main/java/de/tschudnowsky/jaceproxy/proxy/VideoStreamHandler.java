@@ -42,16 +42,16 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 @RequiredArgsConstructor
 public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> {
 
-    private final Channel inboundChannel;
+    private final Channel playerChannel;
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        inboundChannel.closeFuture().addListener((ChannelFutureListener) future -> inboundChannelClosed(ctx));
+        playerChannel.closeFuture().addListener((ChannelFutureListener) future -> inboundChannelClosed(ctx));
     }
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
-        if (inboundChannel.isActive()) {
+        if (playerChannel.isActive()) {
             if (msg instanceof HttpResponse) {
                 sendHttpResponse((HttpResponse) msg);
             }
@@ -64,7 +64,7 @@ public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> 
     }
 
     private void inboundChannelClosed(ChannelHandlerContext ctx) {
-        log.warn("Inbound channel closed, stopping streaming");
+        log.warn("Player channel closed, stopping streaming");
         ctx.close();
     }
 
@@ -84,17 +84,29 @@ public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> 
         response.headers().set(HttpHeaderNames.CONNECTION, KEEP_ALIVE);
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
         response.headers().set(HttpHeaderNames.ACCEPT_RANGES, BYTES);
-        inboundChannel.writeAndFlush(response);
+        playerChannel.writeAndFlush(response);
     }
 
     private void streamHttpContent(HttpContent msg, ChannelHandlerContext ctx) {
         if (msg instanceof LastHttpContent) {
             log.info("Download stopped");
-            inboundChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+            playerChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
             ctx.close();
         } else {
-            ChunkedInput<ByteBuf> chunkedInput = new ChunkedStream(new ByteBufInputStream(msg.content()));
-            inboundChannel.writeAndFlush(chunkedInput);
+            ChunkedInput<ByteBuf> chunkedInput = new ChunkedStream(new ByteBufInputStream(msg.content())) {
+                // Seems like HttpContent is always released, so when channel closed we get
+                // IllegalReferenceCountException: refCnt in ChunkedInput.isEndOfInput()
+                // as workaround, if channel closed, just report true
+                @Override
+                public boolean isEndOfInput() throws Exception {
+                    if (playerChannel.isActive()) {
+                        return super.isEndOfInput();
+                    } else {
+                        return true;
+                    }
+                }
+            };
+            playerChannel.writeAndFlush(chunkedInput);
         }
     }
 
@@ -102,8 +114,8 @@ public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         log.error("Playback failed", cause);
-        if (inboundChannel.isActive()) {
-            inboundChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+        if (playerChannel.isActive()) {
+            playerChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
         }
         ctx.close();
     }

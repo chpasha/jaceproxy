@@ -15,17 +15,13 @@
  */
 package de.tschudnowsky.jaceproxy.acestream_api.handlers;
 
-import de.tschudnowsky.jaceproxy.acestream_api.commands.ShutdownCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.StartCommand;
-import de.tschudnowsky.jaceproxy.acestream_api.commands.StopCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.events.Event;
 import de.tschudnowsky.jaceproxy.acestream_api.events.StartPlayEvent;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.timeout.ReadTimeoutException;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,11 +47,6 @@ public class Start extends SimpleChannelInboundHandler<Event> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-
-        inboundChannel.closeFuture().addListener((ChannelFutureListener) future -> {
-            log.warn("Inbound channel closed, stopping ace client");
-            stopAceClient(ctx);
-        });
         ctx.writeAndFlush(startCommand).sync();
     }
 
@@ -71,16 +62,5 @@ public class Start extends SimpleChannelInboundHandler<Event> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         log.error("", cause);
-        if (cause instanceof ReadTimeoutException) {
-
-        }
-        stopAceClient(ctx);
-    }
-
-    private void stopAceClient(ChannelHandlerContext ctx) {
-        ctx.write(new StopCommand());
-        ctx.write(new ShutdownCommand());
-        ctx.flush();
-        ctx.close();
     }
 }

@@ -42,7 +42,6 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
          .channel(ctx.channel().getClass())
          .handler(new AceStreamClientInitializer(command, inboundChannel));
 
-        // Start the connection attempt.
         ChannelFuture f = b.connect(HOST, PORT);
         f.addListener((ChannelFutureListener) future -> {
             if (!future.isSuccess()) {
@@ -81,12 +80,10 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        if (acestreamChannel != null) {
-            closeOnFlush(acestreamChannel);
-        }
+        stopAceClient();
     }
 
-    void stopAceClient() {
+    private void stopAceClient() {
         if (acestreamChannel  != null && acestreamChannel.isActive()) {
             acestreamChannel.writeAndFlush(new StopCommand());
             acestreamChannel.writeAndFlush(new ShutdownCommand())

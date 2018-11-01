@@ -4,6 +4,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.internal.SocketUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,7 +42,7 @@ public class AceStreamUrlInterceptor extends ChannelOutboundHandlerAdapter {
                      ChannelPipeline pipeline = ch.pipeline();
                      pipeline.addLast(new HttpClientCodec())
                              //todo test
-                             //.addLast(new ReadTimeoutHandler(30))
+                             .addLast(new ReadTimeoutHandler(30))
                              .addLast(new VideoStreamHandler(playerChannel));
                  }
              })
