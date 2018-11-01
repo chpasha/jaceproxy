@@ -53,6 +53,7 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        log.info("{}", loadAsyncCommand);
         requestId = loadAsyncCommand.getRequestId();
         ctx.writeAndFlush(loadAsyncCommand).sync();
     }
@@ -67,9 +68,10 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
             ctx.close();
             return;
         }
-
+        log.info("{}", event);
         LoadAsyncResponseEvent responseEvent = (LoadAsyncResponseEvent) event;
         StartCommand startCommand = createStartCommand(responseEvent.getResponse());
+        log.info("{}", startCommand);
         ctx.pipeline().addLast(new Start(startCommand, inboundChannel));
         ctx.pipeline().remove(this);
         ctx.fireChannelActive();
