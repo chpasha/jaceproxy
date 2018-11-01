@@ -22,17 +22,15 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpObject;
+import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.stream.ChunkedInput;
 import io.netty.handler.stream.ChunkedStream;
 import io.netty.handler.timeout.ReadTimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import static io.netty.handler.codec.http.HttpHeaderNames.TRANSFER_ENCODING;
-import static io.netty.handler.codec.http.HttpHeaderValues.*;
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 
 /**
@@ -60,7 +58,7 @@ public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> 
     public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
         if (playerChannel.isActive()) {
             if (msg instanceof HttpResponse) {
-                sendHttpResponse((HttpResponse) msg);
+                logHttpResponse((HttpResponse) msg);
             }
             if (msg instanceof HttpContent) {
                 streamHttpContent((HttpContent) msg, ctx);
@@ -75,23 +73,16 @@ public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> 
         ctx.close();
     }
 
-    private void sendHttpResponse(HttpResponse msg) {
-        HttpResponse response = msg;
-        log.debug("STATUS: {}", response.status());
-        log.debug("VERSION: {}", response.protocolVersion());
-        if (!response.headers().isEmpty()) {
-            for (CharSequence name : response.headers().names()) {
-                for (CharSequence value : response.headers().getAll(name)) {
+    private void logHttpResponse(HttpResponse msg) {
+        log.debug("STATUS: {}", msg.status());
+        log.debug("VERSION: {}", msg.protocolVersion());
+        if (!msg.headers().isEmpty()) {
+            for (CharSequence name : msg.headers().names()) {
+                for (CharSequence value : msg.headers().getAll(name)) {
                     log.debug("HEADER: {} = {}", name, value);
                 }
             }
         }
-        response = new DefaultHttpResponse(HTTP_1_1, OK);
-        response.headers().set(TRANSFER_ENCODING, CHUNKED);
-        response.headers().set(HttpHeaderNames.CONNECTION, KEEP_ALIVE);
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
-        response.headers().set(HttpHeaderNames.ACCEPT_RANGES, BYTES);
-        playerChannel.writeAndFlush(response);
     }
 
     private void streamHttpContent(HttpContent msg, ChannelHandlerContext ctx) {

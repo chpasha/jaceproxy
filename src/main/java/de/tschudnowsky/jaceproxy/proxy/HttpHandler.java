@@ -4,10 +4,7 @@ import de.tschudnowsky.jaceproxy.acestream_api.AceStreamClientInitializer;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.*;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.codec.http.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,6 +13,9 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 
 import static io.netty.buffer.Unpooled.copiedBuffer;
+import static io.netty.handler.codec.http.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.netty.handler.codec.http.HttpHeaderValues.*;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
@@ -37,6 +37,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, HttpRequest request) throws Exception {
         command = createLoadCommandFromRequest(request.uri());
+        sendHttpResponse(ctx);
         spawnAceStreamConnection(ctx.channel());
     }
 
@@ -65,6 +66,15 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
                 return new LoadAsyncInfohashCommand(infohash);
         }
         throw new IllegalArgumentException("Unsupported url " + url);
+    }
+
+    private void sendHttpResponse(ChannelHandlerContext ctx) {
+        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+        response.headers().set(TRANSFER_ENCODING, CHUNKED);
+        response.headers().set(HttpHeaderNames.CONNECTION, KEEP_ALIVE);
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
+        response.headers().set(HttpHeaderNames.ACCEPT_RANGES, BYTES);
+        ctx.writeAndFlush(response);
     }
 
     private void spawnAceStreamConnection(Channel inboundChannel) {
