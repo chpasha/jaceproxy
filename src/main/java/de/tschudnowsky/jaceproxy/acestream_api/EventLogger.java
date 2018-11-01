@@ -19,11 +19,11 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
  * Log interesting acestream events here
  */
 @ChannelHandler.Sharable
-@Slf4j
+@Slf4j(topic = "EventLogger")
 public class EventLogger extends MessageToMessageDecoder<Event> {
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, Event msg, List<Object> out) throws Exception {
+    protected void decode(ChannelHandlerContext ctx, Event msg, List<Object> out){
         if (msg instanceof StatusEvent) {
             logState(((StatusEvent) msg));
         }

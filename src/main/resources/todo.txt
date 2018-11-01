@@ -1,3 +1,4 @@
+- any new infos from acestream 33 in buffering/downloading?
 - respond to shutdown event
 - test cases when acestream not running or stopped working abruptly
 - parse requests contentid, torrent, etc
@@ -5,8 +6,8 @@
 - EventLogger -> Handler?
 - send SETOPTIONS use_stop_notifications=1 ???
 - maybe ignore useless events, why instantiate classes and map properteis for smth like livepos?
-- channel name in thread name?
 - external config
+- shorten log entries
 - play same channel two clients?
 - play certain files from torrent with multiple files?
 - get rid of libs?
