@@ -31,6 +31,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
     private static final int PORT = Integer.parseInt(System.getProperty("port", "62062"));
 
     private Channel acestreamChannel;
+    private ChannelHandler acestreamHandler;
     private LoadAsyncCommand command;
 
     @Override
@@ -67,10 +68,16 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
     }
 
     private void spawnAceStreamConnection(Channel inboundChannel) {
+        // Theoretically we don't need to instantiate it multiple times, we are in same session
+        // and just want to repeat handshake/load/start stuff on timeout
+        if (acestreamHandler == null) {
+            acestreamHandler = new AceStreamClientInitializer(command, inboundChannel);
+        }
+
         Bootstrap b = new Bootstrap();
         b.group(inboundChannel.eventLoop())
          .channel(inboundChannel.getClass())
-         .handler(new AceStreamClientInitializer(command, inboundChannel));
+         .handler(acestreamHandler);
 
         ChannelFuture f = b.connect(HOST, PORT);
         f.addListener((ChannelFutureListener) future -> {

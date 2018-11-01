@@ -47,7 +47,13 @@ public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> 
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        playerChannel.closeFuture().addListener((ChannelFutureListener) future -> inboundChannelClosed(ctx));
+        final ChannelFutureListener listener = future -> inboundChannelClosed(ctx);
+        // We are getting here multiple times if restarted on timeout when parent channel closed,
+        // so we must register listener on channelActive
+        // and unregister every time our context is closed - or we get multiple notifications which is not
+        // a tragedy but still not good
+        playerChannel.closeFuture().addListener(listener);
+        ctx.channel().closeFuture().addListener(future -> playerChannel.closeFuture().removeListener(listener));
     }
 
     @Override

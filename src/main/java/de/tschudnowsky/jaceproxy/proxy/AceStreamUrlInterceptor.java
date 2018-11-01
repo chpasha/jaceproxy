@@ -28,6 +28,13 @@ public class AceStreamUrlInterceptor extends ChannelOutboundHandlerAdapter {
 
     private void stream(ChannelHandlerContext ctx, URI uri) {
         try {
+            /*if (true) {
+                DefaultHttpResponse response = new DefaultHttpResponse(HTTP_1_1, MOVED_PERMANENTLY);
+                response.headers().set(LOCATION, uri.toString());
+                ctx.writeAndFlush(response);
+                return;
+            }
+            */
             String host = uri.getHost();
             int port = uri.getPort();
 
@@ -41,7 +48,7 @@ public class AceStreamUrlInterceptor extends ChannelOutboundHandlerAdapter {
                  protected void initChannel(SocketChannel ch) {
                      ChannelPipeline pipeline = ch.pipeline();
                      pipeline.addLast(new HttpClientCodec())
-                             .addLast(new ReadTimeoutHandler(30))
+                             .addLast(new ReadTimeoutHandler(3))
                              .addLast(new VideoStreamHandler(playerChannel));
                  }
              })
