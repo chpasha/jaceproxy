@@ -69,4 +69,13 @@ public abstract class EventMapperImpl<T extends Event> implements EventMapper<T>
         }
         return null;
     }
+
+    @Nullable Long toLong(@Nullable String value) {
+        try {
+            return value == null ? null : Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            log.error("Converting string to long", e);
+        }
+        return null;
+    }
 }

@@ -26,7 +26,8 @@ public class GenericEventMapper implements EventMapper<Event> {
     private static final Map<String, EventMapper<? extends Event>> eventMapperMap = new HashMap<String, EventMapper<? extends Event>>() {
         {
             put("cansave", new CanSaveEventMapper());
-            put("livepos", new LiveposEventMapper());
+            //put("livepos", new LiveposEventMapper());
+            put("livepos", new EmptyEventMapper<>(LiveposEvent.class));
             put("download_stopped", new DownloadStoppedEventMapper());
         }
     };

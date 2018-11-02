@@ -7,6 +7,7 @@ import lombok.EqualsAndHashCode;
  * User: pavel
  * Date: 14.10.18
  * Time: 18:56
+ * LiveposEvent(last=1541171976, liveFirst=1541170176, pos=1541171974, firstTs=1541170176, lastTs=1541171976, liveLast=1541171976, isLive=true, bufferPieces=15)
  */
 @EqualsAndHashCode(callSuper = true)
 @Data

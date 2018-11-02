@@ -6,8 +6,5 @@
 - EventLogger -> Handler?
 - send SETOPTIONS use_stop_notifications=1 ???
 - maybe ignore useless events, why instantiate classes and map properteis for smth like livepos?
-- external config
-- shorten log entries
 - play same channel two clients?
 - play certain files from torrent with multiple files?
-- get rid of libs?

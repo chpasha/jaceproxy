@@ -4,10 +4,8 @@ import de.tschudnowsky.jaceproxy.acestream_api.events.Event;
 import de.tschudnowsky.jaceproxy.acestream_api.events.StatusEvent;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
@@ -19,21 +17,21 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
  * Log interesting acestream events here
  */
 @ChannelHandler.Sharable
-@Slf4j(topic = "EventLogger")
-public class EventLogger extends MessageToMessageDecoder<Event> {
+@Slf4j
+public class EventLogger extends SimpleChannelInboundHandler<Event> {
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, Event msg, List<Object> out){
+    protected void channelRead0(ChannelHandlerContext ctx, Event msg) {
         if (msg instanceof StatusEvent) {
             logState(((StatusEvent) msg));
         }
-        out.add(msg);
+        ctx.fireChannelRead(msg);
     }
 
     private void logState(StatusEvent msg) {
         String description = msg.getDescription();
         if (isNotBlank(description)) {
-            log.info(description);
+            log.debug(description);
         }
     }
 }

@@ -15,7 +15,9 @@ import org.jetbrains.annotations.Nullable;
 public class StatusEvent extends EventImpl {
 
     //main:buf;9;0;0;0;1210;0;7;23;0;314294272;0;9650176
+    //main:buf;9;0;0;0;2265;0;0;7;0;221609984;0;0
     //main:dl;0;0;1267;0;266;21;0;1207959552;0;94027776
+    //main:dl;0;0;2372;0;0;3;0;78790656;0;0
     private static final int PROGRESS = 0;
     private static final int PROGRESS_INTERMEDIATE = 1;
     private static final int DL_SPEED = 2;
