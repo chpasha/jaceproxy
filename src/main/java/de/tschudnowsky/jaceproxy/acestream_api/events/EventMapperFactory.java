@@ -26,6 +26,7 @@ public class EventMapperFactory {
             put("LOADRESP", new LoadAsyncResponseEventMapper());
             put("STATE", new StateEventMapper());
             put("START", new StartPlayEventMapper());
+            put("STOP", new EmptyEventMapper<>(StopEvent.class));
         }
     };
 
