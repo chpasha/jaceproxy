@@ -22,14 +22,14 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @Slf4j
 public class EventLogger extends SimpleChannelInboundHandler<Event> {
 
-    private static final List<Class> discardEvents = asList(ResumeEvent.class, PauseEvent.class, LiveposEvent.class);
+    private static final List<Class> discardEvents = asList(ResumeEvent.class, PauseEvent.class, LiveposEvent.class, StateEvent.class);
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Event msg) {
         if (discardEvents.contains(msg.getClass())) {
             log.trace("Discarding useless event {}", msg);
         } else if (msg instanceof StatusEvent) {
-            logState(((StatusEvent) msg));
+            logStatus(((StatusEvent) msg));
         } else {
             if (msg instanceof HelloEvent) {
                 log.info("Connected to acestream engine version {}", ((HelloEvent) msg).getEngineVersion());
@@ -38,7 +38,7 @@ public class EventLogger extends SimpleChannelInboundHandler<Event> {
         }
     }
 
-    private void logState(StatusEvent msg) {
+    private void logStatus(StatusEvent msg) {
         String description = msg.getDescription();
         if (isNotBlank(description)) {
             log.debug(description);

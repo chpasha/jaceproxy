@@ -6,5 +6,6 @@
 - EventLogger -> Handler?
 - send SETOPTIONS use_stop_notifications=1 ???
 - maybe ignore useless events, why instantiate classes and map properteis for smth like livepos?
+- is there any trick to speed up download speeds? like sending event pos etc.?
 - play same channel two clients?
 - play certain files from torrent with multiple files?
