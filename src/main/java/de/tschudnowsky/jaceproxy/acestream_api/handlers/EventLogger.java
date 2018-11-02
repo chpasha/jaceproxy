@@ -1,4 +1,4 @@
-package de.tschudnowsky.jaceproxy.acestream_api;
+package de.tschudnowsky.jaceproxy.acestream_api.handlers;
 
 import de.tschudnowsky.jaceproxy.acestream_api.events.*;
 import io.netty.channel.ChannelHandler;

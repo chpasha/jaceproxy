@@ -16,6 +16,7 @@
 package de.tschudnowsky.jaceproxy.acestream_api;
 
 import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.handlers.EventLogger;
 import de.tschudnowsky.jaceproxy.acestream_api.handlers.Handshake;
 import de.tschudnowsky.jaceproxy.acestream_api.handlers.LoadAsync;
 import de.tschudnowsky.jaceproxy.acestream_api.handlers.Stop;
