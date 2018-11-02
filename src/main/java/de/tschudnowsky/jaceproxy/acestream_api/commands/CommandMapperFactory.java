@@ -33,6 +33,8 @@ public class CommandMapperFactory {
             put(StartTorrentCommand.class, startCommandMapper);
             put(StartUrlCommand.class, startCommandMapper);
 
+            put(SeekCommand.class, new SeekCommandMapper());
+
             SimpleCommandMapper simpleCommandMapper = new SimpleCommandMapper();
             put(StopCommand.class, simpleCommandMapper);
             put(ShutdownCommand.class, simpleCommandMapper);
