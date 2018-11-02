@@ -93,6 +93,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
             }
         });
         acestreamChannel = f.channel();
+        acestreamChannel.closeFuture().addListener(future -> closeOnFlush(inboundChannel));
     }
 
     @Override
