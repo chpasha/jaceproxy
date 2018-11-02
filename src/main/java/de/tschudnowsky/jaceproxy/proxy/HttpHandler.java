@@ -1,5 +1,6 @@
 package de.tschudnowsky.jaceproxy.proxy;
 
+import de.tschudnowsky.jaceproxy.JAceConfig;
 import de.tschudnowsky.jaceproxy.acestream_api.AceStreamClientInitializer;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.*;
 import io.netty.bootstrap.Bootstrap;
@@ -25,10 +26,6 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
  */
 @Slf4j
 public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
-
-    //private static final String HOST = System.getProperty("host", "192.168.9.20");
-    private static final String HOST = System.getProperty("host", "127.0.0.1");
-    private static final int PORT = Integer.parseInt(System.getProperty("port", "62062"));
 
     private Channel acestreamChannel;
     private ChannelHandler acestreamHandler;
@@ -59,11 +56,9 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
                 return new LoadAsyncTorrentCommand(torrentUrl);
             case "content_id":
             case "pid":
-                String pid = param;
-                return new LoadAsyncContentIDCommand(pid);
+                return new LoadAsyncContentIDCommand(param);
             case "infohash":
-                String infohash = param;
-                return new LoadAsyncInfohashCommand(infohash);
+                return new LoadAsyncInfohashCommand(param);
         }
         throw new IllegalArgumentException("Unsupported url " + url);
     }
@@ -89,10 +84,11 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
          .channel(inboundChannel.getClass())
          .handler(acestreamHandler);
 
-        ChannelFuture f = b.connect(HOST, PORT);
+        ChannelFuture f = b.connect(JAceConfig.INSTANCE.getAceHost(), JAceConfig.INSTANCE.getAcePort());
+        log.info("Connection to acestream on {}:{}", JAceConfig.INSTANCE.getAceHost(), JAceConfig.INSTANCE.getAcePort());
         f.addListener((ChannelFutureListener) future -> {
             if (!future.isSuccess()) {
-                log.error("Could not connect to acestream engine on {}:{}", HOST, PORT);
+                log.error("Could not connect to acestream engine");
                 closeOnFlush(inboundChannel);
             }
         });
