@@ -15,8 +15,6 @@
  */
 package de.tschudnowsky.jaceproxy.proxy;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
@@ -26,8 +24,6 @@ import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.handler.stream.ChunkedInput;
-import io.netty.handler.stream.ChunkedStream;
 import io.netty.handler.timeout.ReadTimeoutException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -91,20 +87,7 @@ public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> 
             playerChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
             ctx.close();
         } else {
-            ChunkedInput<ByteBuf> chunkedInput = new ChunkedStream(new ByteBufInputStream(msg.content())) {
-                // Seems like HttpContent is always released, so when channel closed we get
-                // IllegalReferenceCountException: refCnt in ChunkedInput.isEndOfInput()
-                // as workaround, if channel closed, just report true
-                @Override
-                public boolean isEndOfInput() throws Exception {
-                    if (playerChannel.isActive()) {
-                        return super.isEndOfInput();
-                    } else {
-                        return true;
-                    }
-                }
-            };
-            playerChannel.writeAndFlush(chunkedInput);
+            playerChannel.writeAndFlush(msg.retainedDuplicate());
         }
     }
 

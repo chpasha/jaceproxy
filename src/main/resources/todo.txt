@@ -1,3 +1,4 @@
+- memory usage, any flaws?
 - respond to shutdown event
 - test cases when acestream not running or stopped working abruptly
 - parse requests contentid, torrent, etc

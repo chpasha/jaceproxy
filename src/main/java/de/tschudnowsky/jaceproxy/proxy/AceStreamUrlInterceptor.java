@@ -2,6 +2,7 @@ package de.tschudnowsky.jaceproxy.proxy;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.timeout.ReadTimeoutHandler;
@@ -40,7 +41,8 @@ public class AceStreamUrlInterceptor extends ChannelOutboundHandlerAdapter {
 
             Channel playerChannel = ctx.channel();
             Bootstrap b = new Bootstrap();
-            b.group(playerChannel.eventLoop())
+            EventLoopGroup group = new NioEventLoopGroup(1);
+            b.group(group)
              .channel(ctx.channel().getClass())
              .handler(new ChannelInitializer<SocketChannel>() {
 
@@ -57,7 +59,6 @@ public class AceStreamUrlInterceptor extends ChannelOutboundHandlerAdapter {
             //.option(ChannelOption.SO_TIMEOUT, ??)
             ;
             ChannelFuture streamChannel = b.connect(SocketUtils.socketAddress(host, port));
-            //Channel channel = f.sync().channel();
             streamChannel.addListener((ChannelFutureListener) future -> {
                 if (future.isSuccess()) {
                     HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, uri.getPath());
@@ -67,6 +68,7 @@ public class AceStreamUrlInterceptor extends ChannelOutboundHandlerAdapter {
                     log.error("Failed to download {}", uri.toString());
                 }
             });
+            streamChannel.channel().closeFuture().addListener(future -> group.shutdownGracefully());
         } catch (Exception e) {
             log.error("", e);
         }
