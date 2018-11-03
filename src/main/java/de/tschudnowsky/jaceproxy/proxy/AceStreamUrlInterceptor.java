@@ -2,7 +2,6 @@ package de.tschudnowsky.jaceproxy.proxy;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.timeout.ReadTimeoutHandler;
@@ -41,8 +40,7 @@ public class AceStreamUrlInterceptor extends ChannelOutboundHandlerAdapter {
 
             Channel playerChannel = ctx.channel();
             Bootstrap b = new Bootstrap();
-            EventLoopGroup group = new NioEventLoopGroup(1);
-            b.group(group)
+            b.group(playerChannel.eventLoop())
              .channel(ctx.channel().getClass())
              .handler(new ChannelInitializer<SocketChannel>() {
 
@@ -50,14 +48,10 @@ public class AceStreamUrlInterceptor extends ChannelOutboundHandlerAdapter {
                  protected void initChannel(SocketChannel ch) {
                      ChannelPipeline pipeline = ch.pipeline();
                      pipeline.addLast(new HttpClientCodec())
-                             .addLast(new ReadTimeoutHandler(30))
+                             .addLast(new ReadTimeoutHandler(45))
                              .addLast(new VideoStreamHandler(playerChannel));
                  }
-             })
-            //TODO need this?
-            //.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, ??)
-            //.option(ChannelOption.SO_TIMEOUT, ??)
-            ;
+             });
             ChannelFuture streamChannel = b.connect(SocketUtils.socketAddress(host, port));
             streamChannel.addListener((ChannelFutureListener) future -> {
                 if (future.isSuccess()) {
@@ -68,7 +62,6 @@ public class AceStreamUrlInterceptor extends ChannelOutboundHandlerAdapter {
                     log.error("Failed to download {}", uri.toString());
                 }
             });
-            streamChannel.channel().closeFuture().addListener(future -> group.shutdownGracefully());
         } catch (Exception e) {
             log.error("", e);
         }
