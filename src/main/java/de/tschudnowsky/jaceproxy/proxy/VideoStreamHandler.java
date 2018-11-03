@@ -25,7 +25,7 @@ import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.timeout.ReadTimeoutException;
-import lombok.RequiredArgsConstructor;
+import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -34,10 +34,14 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Sharable
 @Slf4j
-@RequiredArgsConstructor
 public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> {
 
     private final Channel playerChannel;
+
+    VideoStreamHandler(Channel playerChannel) {
+        super(false);
+        this.playerChannel = playerChannel;
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
@@ -70,14 +74,18 @@ public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> 
     }
 
     private void logHttpResponse(HttpResponse msg) {
-        log.debug("STATUS: {}", msg.status());
-        log.debug("VERSION: {}", msg.protocolVersion());
-        if (!msg.headers().isEmpty()) {
-            for (CharSequence name : msg.headers().names()) {
-                for (CharSequence value : msg.headers().getAll(name)) {
-                    log.debug("HEADER: {} = {}", name, value);
+        try {
+            log.debug("STATUS: {}", msg.status());
+            log.debug("VERSION: {}", msg.protocolVersion());
+            if (!msg.headers().isEmpty()) {
+                for (CharSequence name : msg.headers().names()) {
+                    for (CharSequence value : msg.headers().getAll(name)) {
+                        log.debug("HEADER: {} = {}", name, value);
+                    }
                 }
             }
+        } finally {
+            ReferenceCountUtil.release(msg);
         }
     }
 
@@ -85,9 +93,10 @@ public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> 
         if (msg instanceof LastHttpContent) {
             log.info("Download stopped");
             playerChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+            msg.release();
             ctx.close();
         } else {
-            playerChannel.writeAndFlush(msg.retainedDuplicate());
+            playerChannel.writeAndFlush(msg);
         }
     }
 
