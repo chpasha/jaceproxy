@@ -64,6 +64,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
     }
 
     private void sendHttpResponse(ChannelHandlerContext ctx) {
+        //TODO maybe if we ever support torrents with multiple files, we have to return m3u instead after loadasync
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.headers().set(TRANSFER_ENCODING, CHUNKED);
         response.headers().set(HttpHeaderNames.CONNECTION, KEEP_ALIVE);

@@ -5,5 +5,8 @@
 - send SETOPTIONS use_stop_notifications=1 ???
 - maybe ignore useless events, why instantiate classes and map properteis for smth like livepos?
 - is there any trick to speed up download speeds? like sending event pos etc.?
-- play same channel two clients?
+- play same channel two clients? See ChannelGroup
+  create channel groups for unique infohash (or smth. unique for broadcast)
+  and use them in downloader
 - play certain files from torrent with multiple files?
+  LoadAsync and then return m3u instead of octet/stream?
