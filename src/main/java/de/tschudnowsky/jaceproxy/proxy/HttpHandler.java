@@ -97,18 +97,6 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
         acestreamChannel.closeFuture().addListener(future -> closeOnFlush(inboundChannel));
     }
 
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
-        shutdownAceClient();
-    }
-
-    private void shutdownAceClient() {
-        if (acestreamChannel != null && acestreamChannel.isActive()) {
-            stopAceClient();
-            acestreamChannel.writeAndFlush(new ShutdownCommand())
-                            .addListener(ChannelFutureListener.CLOSE);
-        }
-    }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx,
@@ -124,7 +112,6 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
                     copiedBuffer(cause.getMessage().getBytes())
             ));
         }
-        shutdownAceClient();
         closeOnFlush(ctx.channel());
     }
 

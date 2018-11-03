@@ -37,31 +37,28 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> {
 
-    private final String infohash;
     private ChannelGroup playerChannelGroup;
 
     VideoStreamHandler(String infohash) {
         super(false);
-        this.infohash = infohash;
         this.playerChannelGroup = JAceHttpServer.getOrCreateChannelGroup(infohash);
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) {
-        //TODO respond to channels closed
-        /*final ChannelFutureListener listener = future -> inboundChannelClosed(ctx);
-        // We are getting here multiple times if restarted on timeout when parent channel closed,
-        // so we must register listener on channelActive
-        // and unregister every time our context is closed - or we get multiple notifications which is not
-        // a tragedy but still not good
-        playerChannel.closeFuture().addListener(listener);
-        ctx.channel().closeFuture().addListener(future -> playerChannel.closeFuture().removeListener(listener));*/
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        super.channelInactive(ctx);
+
+        if (!playerChannelGroup.isEmpty()) {
+            log.info("Acestream closed connection, stopping download and notifying clients");
+            ctx.close();
+            playerChannelGroup.close().sync();
+        }
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
+    public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws InterruptedException {
         if (playerChannelGroup.isEmpty()) {
-            inboundChannelClosed(ctx);
+            onAllClientsDisconnected(ctx);
         } else {
             if (msg instanceof HttpResponse) {
                 logHttpResponse((HttpResponse) msg);
@@ -72,10 +69,9 @@ public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> 
         }
     }
 
-    private void inboundChannelClosed(ChannelHandlerContext ctx) {
-        //TODO only if no channels in group
+    private void onAllClientsDisconnected(ChannelHandlerContext ctx) throws InterruptedException {
         log.warn("Player channel closed, stopping streaming");
-        ctx.close();
+        ctx.close().sync();
     }
 
     private void logHttpResponse(HttpResponse msg) {
@@ -96,7 +92,7 @@ public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> 
 
     private void streamHttpContent(HttpContent msg, ChannelHandlerContext ctx) {
         if (msg instanceof LastHttpContent) {
-            log.info("Download stopped");
+            log.warn("Reached end of stream");
             playerChannelGroup.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
             msg.release();
             ctx.close();
@@ -116,7 +112,7 @@ public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> 
                     .findAny()
                     .ifPresent(playerChannel -> playerChannel.pipeline().get(HttpHandler.class).onReadTimeoutWhileStreaming(playerChannel));
         } else {
-            log.error("Playback failed", cause);
+            log.error("Streaming failed", cause);
             playerChannelGroup.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
         }
         ctx.close();

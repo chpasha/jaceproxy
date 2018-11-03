@@ -10,9 +10,7 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 import de.tschudnowsky.jaceproxy.proxy.JAceProxyInitializer;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -25,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.io.File;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -73,7 +72,7 @@ public class JAceHttpServer {
         try {
             channel.channel().closeFuture().sync();
             inboundChannelsByInfohash.values()
-                    .forEach(channelGroup -> channelGroup.close().awaitUninterruptibly());
+                                     .forEach(channelGroup -> channelGroup.close().awaitUninterruptibly());
         } catch (InterruptedException e) {
             log.info("", e);
         }
@@ -91,6 +90,23 @@ public class JAceHttpServer {
         }
         return group;
     }
+
+    @Synchronized
+    private static Optional<ChannelGroup> findGroupByChannel(@NonNull ChannelId channelId) {
+        return inboundChannelsByInfohash.values()
+                                        .stream()
+                                        .filter(group -> group.find(channelId) != null)
+                                        .findAny();
+    }
+
+    @Synchronized
+    public static boolean isLastChannelInGroup(@NonNull ChannelId channelId)
+    {
+        return findGroupByChannel(channelId)
+                .map(group -> group.size() == 1)
+                .orElse(false);
+    }
+
 
     public static void main(String[] args) {
         CommandLine commandLine = new CommandLine(JAceConfig.INSTANCE);

@@ -49,8 +49,8 @@ public class Start extends SimpleChannelInboundHandler<Event> {
     private final String infohash;
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        ctx.writeAndFlush(startCommand).sync();
+    public void channelActive(ChannelHandlerContext ctx) {
+        ctx.writeAndFlush(startCommand);
     }
 
     @Override
@@ -69,9 +69,8 @@ public class Start extends SimpleChannelInboundHandler<Event> {
             String host = uri.getHost();
             int port = uri.getPort();
 
-            Channel playerChannel = inboundChannel;
             Bootstrap b = new Bootstrap();
-            b.group(playerChannel.eventLoop())
+            b.group(inboundChannel.eventLoop())
              .channel(ctx.channel().getClass())
              .handler(new ChannelInitializer<SocketChannel>() {
 
@@ -93,6 +92,7 @@ public class Start extends SimpleChannelInboundHandler<Event> {
                     log.error("Failed to download {}", uri.toString());
                 }
             });
+
         } catch (Exception e) {
             log.error("", e);
         }

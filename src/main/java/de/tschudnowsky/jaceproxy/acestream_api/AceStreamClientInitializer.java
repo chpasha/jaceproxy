@@ -19,7 +19,7 @@ import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.handlers.EventLogger;
 import de.tschudnowsky.jaceproxy.acestream_api.handlers.Handshake;
 import de.tschudnowsky.jaceproxy.acestream_api.handlers.LoadAsync;
-import de.tschudnowsky.jaceproxy.acestream_api.handlers.Stop;
+import de.tschudnowsky.jaceproxy.acestream_api.handlers.StopOrShutdown;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
@@ -43,11 +43,14 @@ public class AceStreamClientInitializer extends ChannelInitializer<SocketChannel
     public void initChannel(SocketChannel ch) {
 
         ch.pipeline()
+          // --- encoders ---
           .addLast(new CommandEncoder(Charset.forName("US-ASCII")))
+          // --- decoders ---
           .addLast(new DelimiterBasedFrameDecoder(8192, Delimiters.lineDelimiter()))
           .addLast(new EventDecoder(Charset.forName(TELNET_ENCODING)))
+          // --- handlers ---
           .addLast(new EventLogger())
-          .addLast(new Stop())
+          .addLast(new StopOrShutdown(inboundChannel))
           .addLast(new Handshake())
           .addLast(new LoadAsync(loadCommand, inboundChannel))
         ;
