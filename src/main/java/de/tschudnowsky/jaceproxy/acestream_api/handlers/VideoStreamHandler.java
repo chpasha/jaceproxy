@@ -13,13 +13,14 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package de.tschudnowsky.jaceproxy.proxy;
+package de.tschudnowsky.jaceproxy.acestream_api.handlers;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
+import de.tschudnowsky.jaceproxy.JAceHttpServer;
+import de.tschudnowsky.jaceproxy.proxy.HttpHandler;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.group.ChannelGroup;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpResponse;
@@ -36,39 +37,43 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> {
 
-    private final Channel playerChannel;
+    private final String infohash;
+    private ChannelGroup playerChannelGroup;
 
-    VideoStreamHandler(Channel playerChannel) {
+    VideoStreamHandler(String infohash) {
         super(false);
-        this.playerChannel = playerChannel;
+        this.infohash = infohash;
+        this.playerChannelGroup = JAceHttpServer.getOrCreateChannelGroup(infohash);
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        final ChannelFutureListener listener = future -> inboundChannelClosed(ctx);
+        //TODO respond to channels closed
+        /*final ChannelFutureListener listener = future -> inboundChannelClosed(ctx);
         // We are getting here multiple times if restarted on timeout when parent channel closed,
         // so we must register listener on channelActive
         // and unregister every time our context is closed - or we get multiple notifications which is not
         // a tragedy but still not good
         playerChannel.closeFuture().addListener(listener);
-        ctx.channel().closeFuture().addListener(future -> playerChannel.closeFuture().removeListener(listener));
+        ctx.channel().closeFuture().addListener(future -> playerChannel.closeFuture().removeListener(listener));*/
     }
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
-        if (playerChannel.isActive()) {
+        if (playerChannelGroup.isEmpty()) {
+            inboundChannelClosed(ctx);
+        } else {
             if (msg instanceof HttpResponse) {
                 logHttpResponse((HttpResponse) msg);
             }
             if (msg instanceof HttpContent) {
                 streamHttpContent((HttpContent) msg, ctx);
             }
-        } else {
-            inboundChannelClosed(ctx);
         }
     }
 
     private void inboundChannelClosed(ChannelHandlerContext ctx) {
+        //TODO only if no channels in group
         log.warn("Player channel closed, stopping streaming");
         ctx.close();
     }
@@ -92,24 +97,27 @@ public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> 
     private void streamHttpContent(HttpContent msg, ChannelHandlerContext ctx) {
         if (msg instanceof LastHttpContent) {
             log.info("Download stopped");
-            playerChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+            playerChannelGroup.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
             msg.release();
             ctx.close();
         } else {
-            playerChannel.writeAndFlush(msg);
+            playerChannelGroup.writeAndFlush(msg);
         }
     }
 
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        if (cause instanceof ReadTimeoutException && playerChannel.isActive()) {
-            playerChannel.pipeline().get(HttpHandler.class).onReadTimeoutWhileStreaming(playerChannel);
+        if (cause instanceof ReadTimeoutException) {
+            //TODO test this
+            //Restart only one handler for Handshake/Load etc.
+            playerChannelGroup
+                    .stream()
+                    .findAny()
+                    .ifPresent(playerChannel -> playerChannel.pipeline().get(HttpHandler.class).onReadTimeoutWhileStreaming(playerChannel));
         } else {
             log.error("Playback failed", cause);
-            if (playerChannel.isActive()) {
-                playerChannel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
-            }
+            playerChannelGroup.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
         }
         ctx.close();
     }

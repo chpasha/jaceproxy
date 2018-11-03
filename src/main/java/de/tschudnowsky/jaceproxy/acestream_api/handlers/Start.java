@@ -18,16 +18,18 @@ package de.tschudnowsky.jaceproxy.acestream_api.handlers;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.StartCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.events.Event;
 import de.tschudnowsky.jaceproxy.acestream_api.events.StartPlayEvent;
-import io.netty.channel.Channel;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.*;
 import io.netty.channel.ChannelHandler.Sharable;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.codec.http.*;
+import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.util.internal.SocketUtils;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 
 
 /**
@@ -44,6 +46,7 @@ public class Start extends SimpleChannelInboundHandler<Event> {
     @NonNull
     private final Channel inboundChannel;
 
+    private final String infohash;
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -51,11 +54,47 @@ public class Start extends SimpleChannelInboundHandler<Event> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Event event) throws URISyntaxException {
+    protected void channelRead0(ChannelHandlerContext ctx, Event event)  {
         if (event instanceof StartPlayEvent) {
             StartPlayEvent startPlay = (StartPlayEvent) event;
             ctx.pipeline().remove(this);
-            inboundChannel.writeAndFlush(new URI(startPlay.getUrl()));
+            streamUrl(ctx, startPlay.getUrl());
+        }
+    }
+
+    private void streamUrl(ChannelHandlerContext ctx, String url) {
+        try {
+
+            URI uri = new URI(url);
+            String host = uri.getHost();
+            int port = uri.getPort();
+
+            Channel playerChannel = inboundChannel;
+            Bootstrap b = new Bootstrap();
+            b.group(playerChannel.eventLoop())
+             .channel(ctx.channel().getClass())
+             .handler(new ChannelInitializer<SocketChannel>() {
+
+                 @Override
+                 protected void initChannel(SocketChannel ch) {
+                     ChannelPipeline pipeline = ch.pipeline();
+                     pipeline.addLast(new HttpClientCodec())
+                             .addLast(new ReadTimeoutHandler(45))
+                             .addLast(new VideoStreamHandler(infohash));
+                 }
+             });
+            ChannelFuture streamChannel = b.connect(SocketUtils.socketAddress(host, port));
+            streamChannel.addListener((ChannelFutureListener) future -> {
+                if (future.isSuccess()) {
+                    HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, uri.getPath());
+                    streamChannel.channel().writeAndFlush(request);
+                } else {
+                    streamChannel.channel().close();
+                    log.error("Failed to download {}", uri.toString());
+                }
+            });
+        } catch (Exception e) {
+            log.error("", e);
         }
     }
 

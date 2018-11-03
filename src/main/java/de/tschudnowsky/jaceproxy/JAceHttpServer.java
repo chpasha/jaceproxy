@@ -13,13 +13,20 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.concurrent.GlobalEventExecutor;
+import lombok.NonNull;
+import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.io.File;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
@@ -29,6 +36,10 @@ public class JAceHttpServer {
     private ChannelFuture channel;
     private final EventLoopGroup masterGroup;
     private final EventLoopGroup slaveGroup;
+
+    // allows to stream content for same infohash to multiple clients
+    // and to not have to pass InboundChannel through all handlers
+    private static final ConcurrentMap<String, ChannelGroup> inboundChannelsByInfohash = new ConcurrentHashMap<>();
 
     private JAceHttpServer() {
         masterGroup = new NioEventLoopGroup();
@@ -61,9 +72,24 @@ public class JAceHttpServer {
 
         try {
             channel.channel().closeFuture().sync();
+            inboundChannelsByInfohash.values()
+                    .forEach(channelGroup -> channelGroup.close().awaitUninterruptibly());
         } catch (InterruptedException e) {
             log.info("", e);
         }
+    }
+
+    @Synchronized
+    public static ChannelGroup getOrCreateChannelGroup(@NonNull String infohash) {
+        ChannelGroup group = inboundChannelsByInfohash.get(infohash);
+        if (group == null) {
+            log.info("Creating channel group for infohash {}", infohash);
+            group = new DefaultChannelGroup(infohash, GlobalEventExecutor.INSTANCE);
+            inboundChannelsByInfohash.put(infohash, group);
+        } else {
+            log.info("Group for infohash {} already exists with {} channels", infohash, group.size());
+        }
+        return group;
     }
 
     public static void main(String[] args) {

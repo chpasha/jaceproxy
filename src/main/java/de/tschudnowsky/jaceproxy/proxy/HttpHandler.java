@@ -139,7 +139,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
         }
     }
 
-    void onReadTimeoutWhileStreaming(Channel playerChannel) {
+    public void onReadTimeoutWhileStreaming(Channel playerChannel) {
         log.warn("Timeout reading from acestream, restarting broadcast");
         stopAceClient();
         spawnAceStreamConnection(playerChannel);

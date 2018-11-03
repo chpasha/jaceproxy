@@ -1,10 +1,11 @@
-- memory usage, any flaws?
+- instead of Channel-Constructor args use ChannelGroups for all operations?
+- print help for urls
+- timeout for restart and if should restart as config params
 - respond to shutdown event
 - test cases when acestream not running or stopped working abruptly
 - parse requests contentid, torrent, etc
 - send SETOPTIONS use_stop_notifications=1 ???
-- maybe ignore useless events, why instantiate classes and map properteis for smth like livepos?
-- is there any trick to speed up download speeds? like sending event pos etc.?
+- memory usage, any flaws? (- maybe ignore useless events, why instantiate classes and map properteis for smth like livepos?)
 - play same channel two clients? See ChannelGroup
   create channel groups for unique infohash (or smth. unique for broadcast)
   and use them in downloader

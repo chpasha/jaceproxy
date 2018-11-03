@@ -15,6 +15,7 @@
  */
 package de.tschudnowsky.jaceproxy.acestream_api.handlers;
 
+import de.tschudnowsky.jaceproxy.JAceHttpServer;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.*;
 import de.tschudnowsky.jaceproxy.acestream_api.events.Event;
 import de.tschudnowsky.jaceproxy.acestream_api.events.LoadAsyncResponseEvent;
@@ -23,6 +24,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.group.ChannelGroup;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +34,7 @@ import org.slf4j.MDC;
 import java.util.List;
 
 import static java.util.Collections.singletonList;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 
 /**
@@ -71,9 +74,20 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
         }
         log.info("{}", event);
         LoadAsyncResponseEvent responseEvent = (LoadAsyncResponseEvent) event;
+        if (isNotBlank(responseEvent.getResponse().getInfohash())) {
+            ChannelGroup group = JAceHttpServer.getOrCreateChannelGroup(responseEvent.getResponse().getInfohash());
+            if (!group.isEmpty()) {
+                log.info("Group for infohash {} exists already, just adding channel to it", responseEvent.getResponse().getInfohash());
+                group.add(inboundChannel);
+                return;
+            } else {
+                group.add(inboundChannel);
+            }
+        }
+
         StartCommand startCommand = createStartCommand(responseEvent.getResponse());
         log.info("{}", startCommand);
-        ctx.pipeline().addLast(new Start(startCommand, inboundChannel));
+        ctx.pipeline().addLast(new Start(startCommand, inboundChannel, responseEvent.getResponse().getInfohash()));
         ctx.pipeline().remove(this);
         ctx.fireChannelActive();
     }
