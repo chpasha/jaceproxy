@@ -33,6 +33,7 @@ import org.slf4j.MDC;
 
 import java.util.List;
 
+import static de.tschudnowsky.jaceproxy.acestream_api.AceStreamClientInitializer.STREAM_OWNER;
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
@@ -76,17 +77,17 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
         LoadAsyncResponseEvent responseEvent = (LoadAsyncResponseEvent) event;
         if (isNotBlank(responseEvent.getResponse().getInfohash())) {
             ChannelGroup group = JAceHttpServer.getOrCreateChannelGroup(responseEvent.getResponse().getInfohash());
-            if (!group.isEmpty()) {
-                log.info("Group for infohash {} exists already, just adding channel to it", responseEvent.getResponse().getInfohash());
-                group.add(inboundChannel);
+            log.info("Adding channel {} to group {}", responseEvent.getResponse().getInfohash(), group.name());
+            group.add(inboundChannel);
+            // if it is not the first channel in group, than broadcast is already running, no need to start it
+            if (group.size() > 1) {
+                ctx.channel().attr(STREAM_OWNER).set(false);
                 return;
-            } else {
-                group.add(inboundChannel);
             }
         }
-
         StartCommand startCommand = createStartCommand(responseEvent.getResponse());
         log.info("{}", startCommand);
+        ctx.channel().attr(STREAM_OWNER).set(true);
         ctx.pipeline().addLast(new Start(startCommand, inboundChannel, responseEvent.getResponse().getInfohash()));
         ctx.pipeline().remove(this);
         ctx.fireChannelActive();

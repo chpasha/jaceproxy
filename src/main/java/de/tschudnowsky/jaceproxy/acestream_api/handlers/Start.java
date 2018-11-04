@@ -79,7 +79,7 @@ public class Start extends SimpleChannelInboundHandler<Event> {
                      ChannelPipeline pipeline = ch.pipeline();
                      pipeline.addLast(new HttpClientCodec())
                              .addLast(new ReadTimeoutHandler(45))
-                             .addLast(new VideoStreamHandler(infohash));
+                             .addLast(new Ace2ClientStream(infohash));
                  }
              });
             ChannelFuture streamChannel = b.connect(SocketUtils.socketAddress(host, port));

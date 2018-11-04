@@ -35,11 +35,11 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Sharable
 @Slf4j
-public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> {
+public class Ace2ClientStream extends SimpleChannelInboundHandler<HttpObject> {
 
     private ChannelGroup playerChannelGroup;
 
-    VideoStreamHandler(String infohash) {
+    Ace2ClientStream(String infohash) {
         super(false);
         this.playerChannelGroup = JAceHttpServer.getOrCreateChannelGroup(infohash);
     }
@@ -70,7 +70,7 @@ public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> 
     }
 
     private void onAllClientsDisconnected(ChannelHandlerContext ctx) throws InterruptedException {
-        log.warn("Player channel closed, stopping streaming");
+        log.warn("All clients disconnected, stopping streaming");
         ctx.close().sync();
     }
 
@@ -94,8 +94,8 @@ public class VideoStreamHandler extends SimpleChannelInboundHandler<HttpObject> 
         if (msg instanceof LastHttpContent) {
             log.warn("Reached end of stream");
             playerChannelGroup.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
-            msg.release();
             ctx.close();
+            msg.release();
         } else {
             playerChannelGroup.writeAndFlush(msg);
         }
