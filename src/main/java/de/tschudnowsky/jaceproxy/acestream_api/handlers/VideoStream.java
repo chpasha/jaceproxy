@@ -33,12 +33,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Sharable
 @Slf4j
-public class Ace2ClientStream extends SimpleChannelInboundHandler<HttpObject> {
+public class VideoStream extends SimpleChannelInboundHandler<HttpObject> {
 
     private final ChannelGroup playerChannelGroup;
     private boolean isClosing;
 
-    Ace2ClientStream(ChannelGroup playerChannelGroup) {
+    VideoStream(ChannelGroup playerChannelGroup) {
         super(false);
         this.playerChannelGroup = playerChannelGroup;
     }
