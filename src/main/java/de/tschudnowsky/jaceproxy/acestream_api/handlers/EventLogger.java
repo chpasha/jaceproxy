@@ -30,6 +30,7 @@ public class EventLogger extends SimpleChannelInboundHandler<Event> {
             log.trace("Discarding useless event {}", msg);
         } else if (msg instanceof StatusEvent) {
             logStatus(((StatusEvent) msg));
+            ctx.fireChannelRead(msg); //we must pass status events to be able to detect disconnected clients in Handlers on bottom of pipeline
         } else {
             if (msg instanceof HelloEvent) {
                 log.info("Connected to acestream engine version {}", ((HelloEvent) msg).getEngineVersion());

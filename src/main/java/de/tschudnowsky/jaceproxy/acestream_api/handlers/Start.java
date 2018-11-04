@@ -15,18 +15,19 @@
  */
 package de.tschudnowsky.jaceproxy.acestream_api.handlers;
 
+import de.tschudnowsky.jaceproxy.JAceHttpServer;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.StartCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.events.Event;
 import de.tschudnowsky.jaceproxy.acestream_api.events.StartPlayEvent;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.internal.SocketUtils;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;
@@ -37,7 +38,6 @@ import java.net.URI;
  */
 @Sharable
 @Slf4j
-@RequiredArgsConstructor
 public class Start extends SimpleChannelInboundHandler<Event> {
 
     @NonNull
@@ -46,7 +46,13 @@ public class Start extends SimpleChannelInboundHandler<Event> {
     @NonNull
     private final Channel inboundChannel;
 
-    private final String infohash;
+    private ChannelGroup playerChannelGroup;
+
+    public Start(StartCommand startCommand, Channel inboundChannel, String infohash) {
+        this.startCommand = startCommand;
+        this.inboundChannel = inboundChannel;
+        this.playerChannelGroup = JAceHttpServer.getOrCreateChannelGroup(infohash);
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
@@ -58,6 +64,7 @@ public class Start extends SimpleChannelInboundHandler<Event> {
         if (event instanceof StartPlayEvent) {
             StartPlayEvent startPlay = (StartPlayEvent) event;
             ctx.pipeline().remove(this);
+            ctx.pipeline().addLast(new StopOrShutdown(playerChannelGroup));
             streamUrl(ctx, startPlay.getUrl());
         }
     }
@@ -79,7 +86,7 @@ public class Start extends SimpleChannelInboundHandler<Event> {
                      ChannelPipeline pipeline = ch.pipeline();
                      pipeline.addLast(new HttpClientCodec())
                              .addLast(new ReadTimeoutHandler(45))
-                             .addLast(new Ace2ClientStream(infohash));
+                             .addLast(new Ace2ClientStream(playerChannelGroup));
                  }
              });
             ChannelFuture streamChannel = b.connect(SocketUtils.socketAddress(host, port));

@@ -1,16 +1,15 @@
 package de.tschudnowsky.jaceproxy.acestream_api.handlers;
 
-import de.tschudnowsky.jaceproxy.JAceHttpServer;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.ShutdownCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.StopCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.events.Event;
 import de.tschudnowsky.jaceproxy.acestream_api.events.StopEvent;
-import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.group.ChannelGroup;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import static de.tschudnowsky.jaceproxy.acestream_api.AceStreamClientInitializer.STREAM_OWNER;
 
 /**
  * User: pavel
@@ -18,52 +17,26 @@ import static de.tschudnowsky.jaceproxy.acestream_api.AceStreamClientInitializer
  * Time: 18:04
  */
 @Slf4j
+@RequiredArgsConstructor
 public class StopOrShutdown extends SimpleChannelInboundHandler<Event> {
 
-    private final Channel inboundChannel;
-    private static Channel streamOwnerChannel;
-
-    public StopOrShutdown(Channel inboundChannel) {
-        this.inboundChannel = inboundChannel;
-    }
-
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        super.channelActive(ctx);
-
-        inboundChannel.closeFuture().addListener(future -> onClientDisconnected(ctx));
-    }
+    private final ChannelGroup playerChannelGroup;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Event msg) {
-        if (msg instanceof StopEvent) {
+        if (msg instanceof StopEvent) /*TODO ShutDownEvent*/ {
             log.warn("Received stop event from acestream engine, stopping and notifying clients");
-            ctx.close();
-        } else {
-            ctx.fireChannelRead(msg);
-        }
-    }
-
-    private void onClientDisconnected(ChannelHandlerContext ctx) {
-        log.info("Client {} disconnected", inboundChannel.id());
-        if (JAceHttpServer.isLastChannelInGroup(inboundChannel.id())) {
-            log.info("It was the last client, stopping acestream broadcast");
+            playerChannelGroup.close();
+            ctx.close().syncUninterruptibly();
+        } else if (playerChannelGroup.isEmpty()) {
+            log.warn("All clients of the group {} disconnected, stopping ace session", playerChannelGroup.name());
             shutdownAceClient(ctx);
-        } else if (ctx.channel().hasAttr(STREAM_OWNER) && ctx.channel().attr(STREAM_OWNER).get()) {
-            log.info("This channel started broadcast and cannot be closed as long as other channels are subscribed");
-            streamOwnerChannel = ctx.channel();
-        } else {
-            ctx.close();
         }
     }
 
     private void shutdownAceClient(ChannelHandlerContext ctx) {
         ctx.writeAndFlush(new StopCommand());
-        ctx.writeAndFlush(new ShutdownCommand());
-        if (streamOwnerChannel != null) {
-            streamOwnerChannel.close();
-            streamOwnerChannel = null;
-        }
-        ctx.close();
+        ctx.writeAndFlush(new ShutdownCommand())
+           .addListener(ChannelFutureListener.CLOSE);
     }
 }

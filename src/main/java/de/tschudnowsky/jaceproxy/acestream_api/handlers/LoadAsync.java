@@ -79,9 +79,9 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
             ChannelGroup group = JAceHttpServer.getOrCreateChannelGroup(responseEvent.getResponse().getInfohash());
             log.info("Adding channel {} to group {}", responseEvent.getResponse().getInfohash(), group.name());
             group.add(inboundChannel);
-            // if it is not the first channel in group, than broadcast is already running, no need to start it
+            // if it is not the first channel in group, than broadcast is already running, no need to start anything
             if (group.size() > 1) {
-                ctx.channel().attr(STREAM_OWNER).set(false);
+                ctx.close();
                 return;
             }
         }

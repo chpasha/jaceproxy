@@ -36,9 +36,9 @@ public class JAceHttpServer {
     private final EventLoopGroup masterGroup;
     private final EventLoopGroup slaveGroup;
 
-    // allows to stream content for same infohash to multiple clients
+    // allows to stream content for same hash (url, content_id, whatever) to multiple clients
     // and to not have to pass InboundChannel through all handlers
-    private static final ConcurrentMap<String, ChannelGroup> inboundChannelsByInfohash = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, ChannelGroup> inboundChannelsByHash = new ConcurrentHashMap<>();
 
     private JAceHttpServer() {
         masterGroup = new NioEventLoopGroup();
@@ -71,8 +71,8 @@ public class JAceHttpServer {
 
         try {
             channel.channel().closeFuture().sync();
-            inboundChannelsByInfohash.values()
-                                     .forEach(channelGroup -> channelGroup.close().awaitUninterruptibly());
+            inboundChannelsByHash.values()
+                                 .forEach(channelGroup -> channelGroup.close().awaitUninterruptibly());
         } catch (InterruptedException e) {
             log.info("", e);
         }
@@ -80,11 +80,11 @@ public class JAceHttpServer {
 
     @Synchronized
     public static ChannelGroup getOrCreateChannelGroup(@NonNull String infohash) {
-        ChannelGroup group = inboundChannelsByInfohash.get(infohash);
+        ChannelGroup group = inboundChannelsByHash.get(infohash);
         if (group == null) {
             log.info("Creating channel group for infohash {}", infohash);
             group = new DefaultChannelGroup(infohash, GlobalEventExecutor.INSTANCE);
-            inboundChannelsByInfohash.put(infohash, group);
+            inboundChannelsByHash.put(infohash, group);
         } else {
             log.info("Group for infohash {} already exists with {} channels", infohash, group.size());
         }
@@ -93,10 +93,10 @@ public class JAceHttpServer {
 
     @Synchronized
     private static Optional<ChannelGroup> findGroupByChannel(@NonNull ChannelId channelId) {
-        return inboundChannelsByInfohash.values()
-                                        .stream()
-                                        .filter(group -> group.find(channelId) != null)
-                                        .findAny();
+        return inboundChannelsByHash.values()
+                                    .stream()
+                                    .filter(group -> group.find(channelId) != null)
+                                    .findAny();
     }
 
     @Synchronized

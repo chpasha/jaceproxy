@@ -1,4 +1,6 @@
 - instead of Channel-Constructor args use ChannelGroups for all operations?
+- timeout on waiting for stream from ace
+- Unknown event received: INFO 1;Cannot find active peers
 - print help for urls
 - timeout for restart and if should restart as config params
 - respond to shutdown event

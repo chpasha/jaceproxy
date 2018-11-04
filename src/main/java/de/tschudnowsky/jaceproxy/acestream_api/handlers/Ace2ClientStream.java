@@ -15,8 +15,6 @@
  */
 package de.tschudnowsky.jaceproxy.acestream_api.handlers;
 
-import de.tschudnowsky.jaceproxy.JAceHttpServer;
-import de.tschudnowsky.jaceproxy.proxy.HttpHandler;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -37,11 +35,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Ace2ClientStream extends SimpleChannelInboundHandler<HttpObject> {
 
-    private ChannelGroup playerChannelGroup;
+    private final ChannelGroup playerChannelGroup;
+    private boolean isClosing;
 
-    Ace2ClientStream(String infohash) {
+    Ace2ClientStream(ChannelGroup playerChannelGroup) {
         super(false);
-        this.playerChannelGroup = JAceHttpServer.getOrCreateChannelGroup(infohash);
+        this.playerChannelGroup = playerChannelGroup;
     }
 
     @Override
@@ -56,7 +55,7 @@ public class Ace2ClientStream extends SimpleChannelInboundHandler<HttpObject> {
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws InterruptedException {
+    public void channelRead0(ChannelHandlerContext ctx, HttpObject msg)  {
         if (playerChannelGroup.isEmpty()) {
             onAllClientsDisconnected(ctx);
         } else {
@@ -69,9 +68,12 @@ public class Ace2ClientStream extends SimpleChannelInboundHandler<HttpObject> {
         }
     }
 
-    private void onAllClientsDisconnected(ChannelHandlerContext ctx) throws InterruptedException {
-        log.warn("All clients disconnected, stopping streaming");
-        ctx.close().sync();
+    private void onAllClientsDisconnected(ChannelHandlerContext ctx)  {
+        if (!isClosing) {
+            log.warn("All clients disconnected, stopping streaming");
+            isClosing = true;
+            ctx.close();
+        }
     }
 
     private void logHttpResponse(HttpResponse msg) {
@@ -105,12 +107,12 @@ public class Ace2ClientStream extends SimpleChannelInboundHandler<HttpObject> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (cause instanceof ReadTimeoutException) {
-            //TODO test this
+            //TODO move to httphandler level
             //Restart only one handler for Handshake/Load etc.
-            playerChannelGroup
+           /* playerChannelGroup
                     .stream()
                     .findAny()
-                    .ifPresent(playerChannel -> playerChannel.pipeline().get(HttpHandler.class).onReadTimeoutWhileStreaming(playerChannel));
+                    .ifPresent(playerChannel -> playerChannel.pipeline().get(HttpHandler.class).onReadTimeoutWhileStreaming(playerChannel));*/
         } else {
             log.error("Streaming failed", cause);
             playerChannelGroup.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);

@@ -27,7 +27,6 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 @Slf4j
 public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
 
-    private Channel acestreamChannel;
     private ChannelHandler acestreamHandler;
     private LoadAsyncCommand command;
 
@@ -93,8 +92,6 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
                 closeOnFlush(inboundChannel);
             }
         });
-        acestreamChannel = f.channel();
-        acestreamChannel.closeFuture().addListener(future -> closeOnFlush(inboundChannel));
     }
 
 
@@ -126,7 +123,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
         }
     }
 
-    public void onReadTimeoutWhileStreaming(Channel playerChannel) {
+    /*public void onReadTimeoutWhileStreaming(Channel playerChannel) {
         log.warn("Timeout reading from acestream, restarting broadcast");
         stopAceClient();
         spawnAceStreamConnection(playerChannel);
@@ -136,6 +133,6 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
         if (acestreamChannel != null && acestreamChannel.isActive()) {
             acestreamChannel.writeAndFlush(new StopCommand());
         }
-    }
+    }*/
 
 }
