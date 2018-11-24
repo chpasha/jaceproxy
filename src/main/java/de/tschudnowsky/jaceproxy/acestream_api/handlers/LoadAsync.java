@@ -33,7 +33,6 @@ import org.slf4j.MDC;
 
 import java.util.List;
 
-import static de.tschudnowsky.jaceproxy.acestream_api.AceStreamClientInitializer.STREAM_OWNER;
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
@@ -87,7 +86,6 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
         }
         StartCommand startCommand = createStartCommand(responseEvent.getResponse());
         log.info("{}", startCommand);
-        ctx.channel().attr(STREAM_OWNER).set(true);
         ctx.pipeline().addLast(new Start(startCommand, inboundChannel, responseEvent.getResponse().getInfohash()));
         ctx.pipeline().remove(this);
         ctx.fireChannelActive();

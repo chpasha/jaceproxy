@@ -24,7 +24,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.Delimiters;
-import io.netty.util.AttributeKey;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,10 +37,6 @@ public class AceStreamClientInitializer extends ChannelInitializer<SocketChannel
 
     private final LoadAsyncCommand loadCommand;
     private final Channel inboundChannel;
-
-    // Mark a channel that issued StartXXX Command in case of multiple clients watching the same broadcast
-    // This channel owns the stream and cannot be closed if there are other subscribers
-    public final static AttributeKey<Boolean> STREAM_OWNER = AttributeKey.valueOf("ownsStream");
 
     @Override
     public void initChannel(SocketChannel ch) {

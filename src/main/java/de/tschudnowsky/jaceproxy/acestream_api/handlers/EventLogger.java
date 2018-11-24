@@ -24,19 +24,22 @@ public class EventLogger extends SimpleChannelInboundHandler<Event> {
 
     private static final List<Class> discardEvents = asList(ResumeEvent.class, PauseEvent.class, LiveposEvent.class, StateEvent.class);
 
+
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Event msg) {
         if (discardEvents.contains(msg.getClass())) {
             log.trace("Discarding useless event {}", msg);
-        } else if (msg instanceof StatusEvent) {
-            logStatus(((StatusEvent) msg));
-            ctx.fireChannelRead(msg); //we must pass status events to be able to detect disconnected clients in Handlers on bottom of pipeline
-        } else {
-            if (msg instanceof HelloEvent) {
-                log.info("Connected to acestream engine version {}", ((HelloEvent) msg).getEngineVersion());
-            }
-            ctx.fireChannelRead(msg);
+            return;
         }
+        if (msg instanceof StatusEvent) {
+            logStatus(((StatusEvent) msg));
+        }
+        if (msg instanceof HelloEvent) {
+            log.info("Connected to acestream engine version {}", ((HelloEvent) msg).getEngineVersion());
+        }
+        // we pass important events down the pipe to be able to respond to them
+        // and regular events like status to be able to detect disconnected clients in Handlers on bottom of pipeline
+        ctx.fireChannelRead(msg);
     }
 
     private void logStatus(StatusEvent msg) {
