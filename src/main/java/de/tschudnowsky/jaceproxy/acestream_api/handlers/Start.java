@@ -65,6 +65,7 @@ public class Start extends SimpleChannelInboundHandler<Event> {
             StartPlayEvent startPlay = (StartPlayEvent) event;
             ctx.pipeline().remove(this);
             ctx.pipeline().addLast(new StopOrShutdown(playerChannelGroup));
+            ctx.fireChannelActive();
             streamUrl(ctx, startPlay.getUrl());
         }
     }

@@ -27,6 +27,7 @@ public class EventMapperFactory {
             put("STATE", new StateEventMapper());
             put("START", new StartPlayEventMapper());
             put("STOP", new EmptyEventMapper<>(StopEvent.class));
+            put("SHUTDOWN", new EmptyEventMapper<>(ShutdownEvent.class));
         }
     };
 

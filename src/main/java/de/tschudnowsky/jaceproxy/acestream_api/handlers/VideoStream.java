@@ -36,10 +36,11 @@ import lombok.extern.slf4j.Slf4j;
 public class VideoStream extends SimpleChannelInboundHandler<HttpObject> {
 
     private final ChannelGroup playerChannelGroup;
-    private boolean isClosing;
 
     VideoStream(ChannelGroup playerChannelGroup) {
         super(false);
+        // We don't have to track the client channels for closed event since StopOrShutdown does just that
+        // When all clients are gone it will issue stop event and we will get LastHttpContent here
         this.playerChannelGroup = playerChannelGroup;
     }
 
@@ -56,23 +57,11 @@ public class VideoStream extends SimpleChannelInboundHandler<HttpObject> {
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, HttpObject msg)  {
-        if (playerChannelGroup.isEmpty()) {
-            onAllClientsDisconnected(ctx);
-        } else {
-            if (msg instanceof HttpResponse) {
-                logHttpResponse((HttpResponse) msg);
-            }
-            if (msg instanceof HttpContent) {
-                streamHttpContent((HttpContent) msg, ctx);
-            }
+        if (msg instanceof HttpResponse) {
+            logHttpResponse((HttpResponse) msg);
         }
-    }
-
-    private void onAllClientsDisconnected(ChannelHandlerContext ctx)  {
-        if (!isClosing) {
-            log.warn("All clients disconnected, stopping streaming");
-            isClosing = true;
-            ctx.close();
+        if (msg instanceof HttpContent) {
+            streamHttpContent((HttpContent) msg, ctx);
         }
     }
 
@@ -102,7 +91,6 @@ public class VideoStream extends SimpleChannelInboundHandler<HttpObject> {
             playerChannelGroup.writeAndFlush(msg);
         }
     }
-
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {

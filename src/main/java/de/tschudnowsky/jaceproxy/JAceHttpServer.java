@@ -10,7 +10,10 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 import de.tschudnowsky.jaceproxy.proxy.JAceProxyInitializer;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelId;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -19,6 +22,8 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 import lombok.NonNull;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
@@ -80,10 +85,15 @@ public class JAceHttpServer {
 
     @Synchronized
     public static ChannelGroup getOrCreateChannelGroup(@NonNull String infohash) {
+        return getOrCreateChannelGroup(infohash, null);
+    }
+
+    @Synchronized
+    public static ChannelGroup getOrCreateChannelGroup(@NonNull String infohash, @Nullable String name) {
         ChannelGroup group = inboundChannelsByHash.get(infohash);
         if (group == null) {
             log.info("Creating channel group for infohash {}", infohash);
-            group = new DefaultChannelGroup(infohash, GlobalEventExecutor.INSTANCE);
+            group = new DefaultChannelGroup(ObjectUtils.defaultIfNull(name, infohash), GlobalEventExecutor.INSTANCE);
             inboundChannelsByHash.put(infohash, group);
         } else {
             log.info("Group for infohash {} already exists with {} channels", infohash, group.size());

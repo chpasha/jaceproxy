@@ -75,7 +75,9 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
         log.info("{}", event);
         LoadAsyncResponseEvent responseEvent = (LoadAsyncResponseEvent) event;
         if (isNotBlank(responseEvent.getResponse().getInfohash())) {
-            ChannelGroup group = JAceHttpServer.getOrCreateChannelGroup(responseEvent.getResponse().getInfohash());
+            //TODO file index
+            String channelGroupName = responseEvent.getResponse().getFiles().get(0).getFilename();
+            ChannelGroup group = JAceHttpServer.getOrCreateChannelGroup(responseEvent.getResponse().getInfohash(), channelGroupName);
             log.info("Adding channel {} to group {}", responseEvent.getResponse().getInfohash(), group.name());
             group.add(inboundChannel);
             // if it is not the first channel in group, than broadcast is already running, no need to start anything
@@ -93,6 +95,7 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
 
     @NotNull
     private StartCommand createStartCommand(LoadAsyncResponseEvent.Response loadAsyncResponse) {
+        //TODO file index
         LoadAsyncResponseEvent.TransportFile transportFile = loadAsyncResponse.getFiles().get(0);
         MDC.put("FILENAME", String.format("[%s]",transportFile.getFilename()));
         List<Integer> fileIndexes = singletonList(0);
