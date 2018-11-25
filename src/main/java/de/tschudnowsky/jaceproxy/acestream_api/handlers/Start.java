@@ -15,8 +15,10 @@
  */
 package de.tschudnowsky.jaceproxy.acestream_api.handlers;
 
+import de.tschudnowsky.jaceproxy.JAceConfig;
 import de.tschudnowsky.jaceproxy.JAceHttpServer;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.StartCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.StopCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.events.Event;
 import de.tschudnowsky.jaceproxy.acestream_api.events.StartPlayEvent;
 import io.netty.bootstrap.Bootstrap;
@@ -48,6 +50,8 @@ public class Start extends SimpleChannelInboundHandler<Event> {
 
     private ChannelGroup playerChannelGroup;
 
+    private ChannelHandlerContext ctx;
+
     public Start(StartCommand startCommand, Channel inboundChannel, String infohash) {
         this.startCommand = startCommand;
         this.inboundChannel = inboundChannel;
@@ -61,9 +65,9 @@ public class Start extends SimpleChannelInboundHandler<Event> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Event event)  {
+        this.ctx = ctx; //TODO is it ok to store context? theoretically there is only 1 Start instance per broadcast
         if (event instanceof StartPlayEvent) {
             StartPlayEvent startPlay = (StartPlayEvent) event;
-            ctx.pipeline().remove(this);
             ctx.pipeline().addLast(new StopOrShutdown(playerChannelGroup));
             ctx.fireChannelActive();
             streamUrl(ctx, startPlay.getUrl());
@@ -86,8 +90,8 @@ public class Start extends SimpleChannelInboundHandler<Event> {
                  protected void initChannel(SocketChannel ch) {
                      ChannelPipeline pipeline = ch.pipeline();
                      pipeline.addLast(new HttpClientCodec())
-                             .addLast(new ReadTimeoutHandler(45))
-                             .addLast(new VideoStream(playerChannelGroup));
+                             .addLast(new ReadTimeoutHandler(JAceConfig.INSTANCE.getTimeout()))
+                             .addLast(new VideoStream(playerChannelGroup, Start.this));
                  }
              });
             ChannelFuture streamChannel = b.connect(SocketUtils.socketAddress(host, port));
@@ -100,10 +104,17 @@ public class Start extends SimpleChannelInboundHandler<Event> {
                     log.error("Failed to download {}", uri.toString());
                 }
             });
-
+            
         } catch (Exception e) {
             log.error("", e);
         }
+    }
+
+    void onReadTimeoutWhileStreaming() {
+        log.info("Restarting broadcast");
+        ctx.pipeline().remove(StopOrShutdown.class);
+        ctx.writeAndFlush(new StopCommand());
+        this.channelActive(ctx);
     }
 
     @Override

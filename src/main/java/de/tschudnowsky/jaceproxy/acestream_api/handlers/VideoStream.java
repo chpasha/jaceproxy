@@ -15,6 +15,7 @@
  */
 package de.tschudnowsky.jaceproxy.acestream_api.handlers;
 
+import de.tschudnowsky.jaceproxy.JAceConfig;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -26,6 +27,7 @@ import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.timeout.ReadTimeoutException;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 
 
 /**
@@ -36,9 +38,16 @@ import lombok.extern.slf4j.Slf4j;
 public class VideoStream extends SimpleChannelInboundHandler<HttpObject> {
 
     private final ChannelGroup playerChannelGroup;
+    private final Start startHandler;
 
-    VideoStream(ChannelGroup playerChannelGroup) {
+    //we should always notify clients on channel-deactivate unless we got timeout
+    //in this case clients should wait for restart
+    private boolean shouldCloseClients = true;
+
+
+    VideoStream(@NotNull ChannelGroup playerChannelGroup, @NotNull Start startHandler) {
         super(false);
+        this.startHandler = startHandler;
         // We don't have to track the client channels for closed event since StopOrShutdown does just that
         // When all clients are gone it will issue stop event and we will get LastHttpContent here
         this.playerChannelGroup = playerChannelGroup;
@@ -48,11 +57,12 @@ public class VideoStream extends SimpleChannelInboundHandler<HttpObject> {
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
 
-        if (!playerChannelGroup.isEmpty()) {
-            log.info("Acestream closed connection, stopping download and notifying clients");
-            ctx.close();
-            playerChannelGroup.close().sync();
+        log.info("Acestream closed connection, stopping download");
+        if (shouldCloseClients) {
+            log.info("Notifying clients of streaming end");
+            playerChannelGroup.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
         }
+        ctx.close();
     }
 
     @Override
@@ -95,12 +105,11 @@ public class VideoStream extends SimpleChannelInboundHandler<HttpObject> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (cause instanceof ReadTimeoutException) {
-            //TODO move to httphandler level
-            //Restart only one handler for Handshake/Load etc.
-           /* playerChannelGroup
-                    .stream()
-                    .findAny()
-                    .ifPresent(playerChannel -> playerChannel.pipeline().get(HttpHandler.class).onReadTimeoutWhileStreaming(playerChannel));*/
+            log.error("Timeout while streaming content");
+            if (JAceConfig.INSTANCE.getRestartOnTimeout()) {
+                shouldCloseClients = false;
+                startHandler.onReadTimeoutWhileStreaming();
+            }
         } else {
             log.error("Streaming failed", cause);
             playerChannelGroup.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);

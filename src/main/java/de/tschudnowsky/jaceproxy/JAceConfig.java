@@ -44,6 +44,12 @@ public class JAceConfig {
     @CommandLine.Option(names = {"--port"}, description = "Proxy port, default 8000")
     private Integer port = 8000;
 
+    @CommandLine.Option(names = {"--timeout"}, description = "Timeout in seconds when there is no inbound traffic, default 30sec.")
+    private Integer timeout = 30;
+
+    @CommandLine.Option(names = {"--restart-on-timeout"}, description = "Should broadcast restart on timeout, default true")
+    private Boolean restartOnTimeout = true;
+
     @CommandLine.Option(names = {"--log-level"}, converter = LevelConverter.class,
             description = "Logging verbosity, default is INFO. Allowed values are ERROR, WARN, INFO, DEBUG, TRACE, OFF")
     private Level logLevel = Level.INFO;

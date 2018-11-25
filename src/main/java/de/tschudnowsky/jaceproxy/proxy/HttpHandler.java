@@ -122,17 +122,4 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
             ch.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT).addListener(ChannelFutureListener.CLOSE);
         }
     }
-
-    /*public void onReadTimeoutWhileStreaming(Channel playerChannel) {
-        log.warn("Timeout reading from acestream, restarting broadcast");
-        stopAceClient();
-        spawnAceStreamConnection(playerChannel);
-    }
-
-    private void stopAceClient() {
-        if (acestreamChannel != null && acestreamChannel.isActive()) {
-            acestreamChannel.writeAndFlush(new StopCommand());
-        }
-    }*/
-
 }

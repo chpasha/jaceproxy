@@ -109,15 +109,6 @@ public class JAceHttpServer {
                                     .findAny();
     }
 
-    @Synchronized
-    public static boolean isLastChannelInGroup(@NonNull ChannelId channelId)
-    {
-        return findGroupByChannel(channelId)
-                .map(group -> group.size() == 1)
-                .orElse(false);
-    }
-
-
     public static void main(String[] args) {
         CommandLine commandLine = new CommandLine(JAceConfig.INSTANCE);
         commandLine.parseArgs(args);

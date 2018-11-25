@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 public class StopOrShutdown extends SimpleChannelInboundHandler<Event> {
 
     private final ChannelGroup playerChannelGroup;
+    private boolean isRemovedFromPipeline;
 
     //if we initiate shutdown, we'll get Shutdown-Event as answer and have to ignore it
     //otherwise we should really shutdown
@@ -33,6 +34,12 @@ public class StopOrShutdown extends SimpleChannelInboundHandler<Event> {
         playerChannelGroup.newCloseFuture().addListener(future -> onSomeClientsDisconnected(ctx));
     }
 
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+        super.handlerRemoved(ctx);
+
+        isRemovedFromPipeline = true;
+    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Event msg) {
@@ -57,6 +64,10 @@ public class StopOrShutdown extends SimpleChannelInboundHandler<Event> {
     }
 
     private void onSomeClientsDisconnected(ChannelHandlerContext ctx) {
+        if (isRemovedFromPipeline) {
+            return;
+        }
+
         // This event is fired when all channels in the group that existed at subscription moment were closed
         // but it is possible that new clients have joined same broadcast and new channels were added to group
         // after that so we have to check if group is empty and if not, subscribe again instead of closing

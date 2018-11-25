@@ -1,5 +1,5 @@
-- clean architecture for tracking both http and ace connections considering restarts
-- timeout on no video (on httphandler level?) + restart where? since httphandlers share same acehttp
+- VideoStream - what happens if ace killed
+- restart on timeout settings
 - timeout on waiting for stream from ace
   + Unknown event received: INFO 1;Cannot find active peers
 - print help for urls
