@@ -70,6 +70,7 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
         if (notValidResponse(event)) {
             log.error("Closing because of invalid response");
             ctx.close();
+            inboundChannel.close();
             return;
         }
         log.info("{}", event);
