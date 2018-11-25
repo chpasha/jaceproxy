@@ -74,7 +74,18 @@ public class JAceConfig {
     private JAceConfig() {
     }
 
+    @Override
     public String toString() {
-        return "\naceHost=" + this.getAceHost() + "\nacePort=" + this.getAcePort() + "\nport=" + this.getPort() + "\nlogLevel=" + this.getLogLevel() + "\nlogFile=" + this.getLogFile() + "\nlogFileMaxSize=" + this.getLogFileMaxSize() + "\nlogFileMaxCount=" + this.getLogFileMaxCount();
+        return "JAceConfig{" +
+                "aceHost='" + aceHost + '\'' + "\n"+
+                ", acePort=" + acePort + "\n" +
+                ", port=" + port + "\n" +
+                ", timeout=" + timeout + "\n" +
+                ", restartOnTimeout=" + restartOnTimeout + "\n" +
+                ", logLevel=" + logLevel + "\n" +
+                ", logFile='" + logFile + '\'' + "\n" +
+                ", logFileMaxSize=" + logFileMaxSize + "\n" +
+                ", logFileMaxCount=" + logFileMaxCount + "\n" +
+                '}';
     }
 }
