@@ -95,6 +95,7 @@ public class VideoStream extends SimpleChannelInboundHandler<HttpObject> {
         if (msg instanceof LastHttpContent) {
             log.warn("Reached end of stream");
             playerChannelGroup.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+            shouldCloseClients = false;
             ctx.close();
             msg.release();
         } else {
