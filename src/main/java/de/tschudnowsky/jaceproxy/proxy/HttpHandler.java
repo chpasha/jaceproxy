@@ -27,7 +27,6 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 @Slf4j
 public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
 
-    private ChannelHandler acestreamHandler;
     private LoadAsyncCommand command;
 
     @Override
@@ -64,6 +63,8 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
 
     private void sendHttpResponse(ChannelHandlerContext ctx) {
         //TODO maybe if we ever support torrents with multiple files, we have to return m3u instead after loadasync
+        //but check if tvheadend can wait until then - it stopped listening when we were returning http response
+        //too late
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.headers().set(TRANSFER_ENCODING, CHUNKED);
         response.headers().set(HttpHeaderNames.CONNECTION, KEEP_ALIVE);
@@ -73,16 +74,10 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
     }
 
     private void spawnAceStreamConnection(Channel inboundChannel) {
-        // Theoretically we don't need to instantiate it multiple times, we are in same session
-        // and just want to repeat handshake/load/start stuff on timeout
-        if (acestreamHandler == null) {
-            acestreamHandler = new AceStreamClientInitializer(command, inboundChannel);
-        }
-
         Bootstrap b = new Bootstrap();
         b.group(inboundChannel.eventLoop())
          .channel(inboundChannel.getClass())
-         .handler(acestreamHandler);
+         .handler(new AceStreamClientInitializer(command, inboundChannel));
 
         ChannelFuture f = b.connect(JAceConfig.INSTANCE.getAceHost(), JAceConfig.INSTANCE.getAcePort());
         log.info("Connection to acestream on {}:{}", JAceConfig.INSTANCE.getAceHost(), JAceConfig.INSTANCE.getAcePort());
