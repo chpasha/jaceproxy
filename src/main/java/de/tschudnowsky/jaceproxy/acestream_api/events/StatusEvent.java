@@ -21,13 +21,16 @@ public class StatusEvent extends EventImpl {
     private static final int PROGRESS = 0;
     private static final int PROGRESS_INTERMEDIATE = 1;
     private static final int DL_SPEED = 2;
+    private static final int DL_SPEED_BUFFER = 4;
     private static final int HTTP_DL_SPEED = 3;
     private static final int UP_SPEED = 4;
     private static final int PEERS = 5;
+    private static final int PEERS_BUFFER = 7;
     private static final int HTTP_PEERS = 6;
     private static final int DL_TOTAL = 7;
     private static final int HTTP_DL_TOTAL = 8;
     private static final int UP_TOTAL = 9;
+    private static final int DOWNLOAD_TOTAL_BUFFER = 9;
 
     private String status;
 
@@ -45,10 +48,10 @@ public class StatusEvent extends EventImpl {
     }
 
     private String buffering(String[] segments) {
-        return String.format("Buffering: %s%%, ⇩ %s Kb/s ( ∑ %,dMb )",
+        return String.format("Buffering: %s%%, ⇩ %s Kb/s ( ∑ %,dMb ), Peers %s",
                 segments[PROGRESS],
-                //yes, upload/upload total in buffering are actually download/total
-                segments[UP_SPEED], byteToMb(segments[UP_TOTAL]));
+                segments[DL_SPEED_BUFFER], byteToMb(segments[DOWNLOAD_TOTAL_BUFFER]),
+                segments[PEERS_BUFFER]);
     }
 
     private String downloading(String[] segments) {
