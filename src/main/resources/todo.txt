@@ -1,3 +1,6 @@
+- shorten thread name in log
+- peers/download buffering
+    - total downloaded becomes 0 at some point?! formatting issue or acestream fault?
 - play certain files from torrent with multiple files?
   LoadAsync and then return m3u instead of octet/stream?
 - timeout on waiting for stream from ace
