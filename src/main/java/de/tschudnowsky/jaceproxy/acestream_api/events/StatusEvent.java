@@ -17,6 +17,7 @@ public class StatusEvent extends EventImpl {
     //main:buf;9;0;0;0;1210;0;7;23;0;314294272;0;9650176
     //main:buf;9;0;0;0;2265;0;0;7;0;221609984;0;0
     //main:dl;0;0;1267;0;266;21;0;1207959552;0;94027776
+    //main:dl;0;0;1102;0;201;29;0;2813296640;0;400228352
     //main:dl;0;0;2372;0;0;3;0;78790656;0;0
     private static final int PROGRESS = 0;
     private static final int PROGRESS_INTERMEDIATE = 1;
@@ -61,9 +62,9 @@ public class StatusEvent extends EventImpl {
                 segments[PEERS]);
     }
 
-    private int byteToMb(String value) {
+    private long byteToMb(String value) {
         try {
-            return Integer.parseInt(value) / (1024 * 1024);
+            return Long.parseLong(value) / (1024 * 1024);
         } catch (NumberFormatException e) {
             return 0;
         }
