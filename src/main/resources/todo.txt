@@ -6,5 +6,5 @@
 - adult channels, is there any request for user data (getuserdata)?
 - print help for urls
 - send SETOPTIONS use_stop_notifications=1 ???
-- memory usage, any flaws? (- maybe ignore useless events, why instantiate classes and map properteis for smth like livepos?)
+- memory usage - create memory dump and check most usages (e.g. lot of strings)
 

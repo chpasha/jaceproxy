@@ -3,6 +3,7 @@ package de.tschudnowsky.jaceproxy.acestream_api.handlers;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.ShutdownCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.StopCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.events.Event;
+import de.tschudnowsky.jaceproxy.acestream_api.events.InfoEvent;
 import de.tschudnowsky.jaceproxy.acestream_api.events.ShutdownEvent;
 import de.tschudnowsky.jaceproxy.acestream_api.events.StopEvent;
 import io.netty.channel.ChannelHandlerContext;
@@ -11,6 +12,8 @@ import io.netty.channel.group.ChannelGroup;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Objects;
+
 /**
  * User: pavel
  * Date: 02.11.18
@@ -18,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @RequiredArgsConstructor
-public class StopOrShutdown extends SimpleChannelInboundHandler<Event> {
+public class Stop extends SimpleChannelInboundHandler<Event> {
 
     private final ChannelGroup playerChannelGroup;
     private boolean isRemovedFromPipeline;
@@ -43,6 +46,14 @@ public class StopOrShutdown extends SimpleChannelInboundHandler<Event> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Event msg) {
+        if (msg instanceof InfoEvent) {
+            InfoEvent info = (InfoEvent) msg;
+            if (Objects.equals(info.getCode(), 1)) {
+                log.warn("Ace Engine could not find any peers, stopping and notifying clients");
+                closeContextAndClients(ctx);
+                shutdownAceClient(ctx);
+            }
+        }
         if (msg instanceof StopEvent) {
             log.warn("Received stop event from acestream engine, stopping and notifying clients");
             closeContextAndClients(ctx);

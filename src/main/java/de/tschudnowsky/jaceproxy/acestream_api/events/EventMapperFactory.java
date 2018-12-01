@@ -19,6 +19,7 @@ public class EventMapperFactory {
             put("AUTH", new AuthEventMapper());
             put("EVENT", new GenericEventMapper());
             put("HELLOTS", new HelloEventMapper());
+            put("INFO", new InfoEventMapper());
             put("NOTREADY", new EmptyEventMapper<>(NotReadyEvent.class));
             put("RESUME", new EmptyEventMapper<>(ResumeEvent.class));
             put("PAUSE", new EmptyEventMapper<>(PauseEvent.class));
