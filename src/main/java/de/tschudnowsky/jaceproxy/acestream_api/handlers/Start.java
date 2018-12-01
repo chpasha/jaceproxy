@@ -60,6 +60,8 @@ public class Start extends SimpleChannelInboundHandler<Event> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
+        //we add stop handler before start command to be able to respond to any unexpected events like no peers found
+        ctx.pipeline().addLast(new Stop(playerChannelGroup));
         ctx.writeAndFlush(startCommand);
     }
 
@@ -68,8 +70,6 @@ public class Start extends SimpleChannelInboundHandler<Event> {
         this.ctx = ctx; //TODO is it ok to store context? theoretically there is only 1 Start instance per broadcast
         if (event instanceof StartPlayEvent) {
             StartPlayEvent startPlay = (StartPlayEvent) event;
-            ctx.pipeline().addLast(new Stop(playerChannelGroup));
-            ctx.fireChannelActive();
             streamUrl(ctx, startPlay.getUrl());
         }
     }
