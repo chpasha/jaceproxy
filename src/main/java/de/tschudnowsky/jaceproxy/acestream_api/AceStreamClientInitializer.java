@@ -16,6 +16,7 @@
 package de.tschudnowsky.jaceproxy.acestream_api;
 
 import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.handlers.AceTimeoutHandler;
 import de.tschudnowsky.jaceproxy.acestream_api.handlers.EventLogger;
 import de.tschudnowsky.jaceproxy.acestream_api.handlers.Handshake;
 import de.tschudnowsky.jaceproxy.acestream_api.handlers.LoadAsync;
@@ -24,10 +25,12 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.Delimiters;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.Charset;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -42,12 +45,14 @@ public class AceStreamClientInitializer extends ChannelInitializer<SocketChannel
     public void initChannel(SocketChannel ch) {
 
         ch.pipeline()
+          .addLast(new ReadTimeoutHandler(30, TimeUnit.SECONDS))
           // --- encoders ---
           .addLast(new CommandEncoder(Charset.forName("US-ASCII")))
           // --- decoders ---
           .addLast(new DelimiterBasedFrameDecoder(8192, Delimiters.lineDelimiter()))
           .addLast(new EventDecoder(Charset.forName(TELNET_ENCODING)))
           // --- handlers ---
+          .addLast(new AceTimeoutHandler(inboundChannel))
           .addLast(new EventLogger())
           .addLast(new Handshake())
           .addLast(new LoadAsync(loadCommand, inboundChannel))
