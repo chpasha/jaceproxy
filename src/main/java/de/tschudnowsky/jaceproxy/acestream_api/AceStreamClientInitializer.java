@@ -15,6 +15,7 @@
  */
 package de.tschudnowsky.jaceproxy.acestream_api;
 
+import de.tschudnowsky.jaceproxy.JAceConfig;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.handlers.AceTimeoutHandler;
 import de.tschudnowsky.jaceproxy.acestream_api.handlers.EventLogger;
@@ -45,7 +46,7 @@ public class AceStreamClientInitializer extends ChannelInitializer<SocketChannel
     public void initChannel(SocketChannel ch) {
 
         ch.pipeline()
-          .addLast(new ReadTimeoutHandler(30, TimeUnit.SECONDS))
+          .addLast(new ReadTimeoutHandler(JAceConfig.INSTANCE.getApiTimeout(), TimeUnit.SECONDS))
           // --- encoders ---
           .addLast(new CommandEncoder(Charset.forName("US-ASCII")))
           // --- decoders ---

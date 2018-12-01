@@ -44,8 +44,11 @@ public class JAceConfig {
     @CommandLine.Option(names = {"--port"}, description = "Proxy port, default 8000")
     private Integer port = 8000;
 
-    @CommandLine.Option(names = {"--timeout"}, description = "Timeout in seconds when there is no inbound traffic, default 45sec.")
-    private Integer timeout = 45;
+    @CommandLine.Option(names = {"--stream-timeout"}, description = "Timeout in seconds when there is no inbound video traffic, default 45sec.")
+    private Integer streamTimeout = 45;
+
+    @CommandLine.Option(names = {"--ace-timeout"}, description = "Timeout in seconds when there is no response from acestream while exchanging messages, default 30sec.")
+    private Integer apiTimeout = 30;
 
     @CommandLine.Option(names = {"--restart-on-timeout"}, description = "Should broadcast restart on timeout, default true")
     private Boolean restartOnTimeout = true;
@@ -76,16 +79,18 @@ public class JAceConfig {
 
     @Override
     public String toString() {
-        return "JAceConfig{" +
+        return "\n" +
+                "JAceConfig{\n" +
                 "aceHost='" + aceHost + '\'' + "\n"+
-                ", acePort=" + acePort + "\n" +
-                ", port=" + port + "\n" +
-                ", timeout=" + timeout + "\n" +
-                ", restartOnTimeout=" + restartOnTimeout + "\n" +
-                ", logLevel=" + logLevel + "\n" +
-                ", logFile='" + logFile + '\'' + "\n" +
-                ", logFileMaxSize=" + logFileMaxSize + "\n" +
-                ", logFileMaxCount=" + logFileMaxCount + "\n" +
+                "acePort=" + acePort + "\n" +
+                "port=" + port + "\n" +
+                "apiTimeout=" + apiTimeout + "\n" +
+                "streamTimeout=" + streamTimeout + "\n" +
+                "restartOnTimeout=" + restartOnTimeout + "\n" +
+                "logLevel=" + logLevel + "\n" +
+                "logFile='" + logFile + '\'' + "\n" +
+                "logFileMaxSize=" + logFileMaxSize + "\n" +
+                "logFileMaxCount=" + logFileMaxCount + "\n" +
                 '}';
     }
 }

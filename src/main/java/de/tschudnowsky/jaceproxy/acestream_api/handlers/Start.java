@@ -90,7 +90,7 @@ public class Start extends SimpleChannelInboundHandler<Event> {
                  protected void initChannel(SocketChannel ch) {
                      ChannelPipeline pipeline = ch.pipeline();
                      pipeline.addLast(new HttpClientCodec())
-                             .addLast(new ReadTimeoutHandler(JAceConfig.INSTANCE.getTimeout()))
+                             .addLast(new ReadTimeoutHandler(JAceConfig.INSTANCE.getStreamTimeout()))
                              .addLast(new VideoStream(playerChannelGroup, Start.this));
                  }
              });
