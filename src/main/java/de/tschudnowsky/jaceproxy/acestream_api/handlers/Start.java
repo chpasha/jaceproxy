@@ -64,7 +64,7 @@ public class Start extends SimpleChannelInboundHandler<Event> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Event event)  {
+    protected void channelRead0(ChannelHandlerContext ctx, Event event) {
         this.ctx = ctx; //TODO is it ok to store context? theoretically there is only 1 Start instance per broadcast
         if (event instanceof StartPlayEvent) {
             StartPlayEvent startPlay = (StartPlayEvent) event;
@@ -104,15 +104,17 @@ public class Start extends SimpleChannelInboundHandler<Event> {
                     log.error("Failed to download {}", uri.toString());
                 }
             });
-            
+
         } catch (Exception e) {
             log.error("", e);
         }
     }
 
-    void onReadTimeoutWhileStreaming() {
+    synchronized void onReadTimeoutWhileStreaming() {
         log.info("Restarting broadcast");
-        ctx.pipeline().remove(StopOrShutdown.class);
+        StopOrShutdown stopOrShutdown = ctx.pipeline().get(StopOrShutdown.class);
+        if (stopOrShutdown != null)
+            ctx.pipeline().remove(stopOrShutdown);
         ctx.writeAndFlush(new StopCommand());
         this.channelActive(ctx);
     }
