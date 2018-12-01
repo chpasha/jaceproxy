@@ -44,6 +44,8 @@ public class JAceConfig {
     @CommandLine.Option(names = {"--port"}, description = "Proxy port, default 8000")
     private Integer port = 8000;
 
+    // ffmpeg does work without explicit restart, maybe because tvheadend just notices that process is gone
+    // but without ffmpeg neither empty content nor closing client connection causes tvheadend to restart
     @CommandLine.Option(names = {"--stream-timeout"}, description = "Timeout in seconds when there is no inbound video traffic, default 45sec.")
     private Integer streamTimeout = 45;
 
