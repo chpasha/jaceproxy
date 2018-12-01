@@ -110,6 +110,8 @@ public class VideoStream extends SimpleChannelInboundHandler<HttpObject> {
             if (JAceConfig.INSTANCE.getRestartOnTimeout()) {
                 shouldCloseClients = false;
                 startHandler.onReadTimeoutWhileStreaming();
+            } else {
+                shouldCloseClients = true;
             }
         } else {
             log.error("Streaming failed", cause);
