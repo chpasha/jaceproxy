@@ -1,10 +1,8 @@
-- no timeout? will tvheadend restart?
-- timeout after start command - ace doesn't respond and tvheadend tries again. we need general timeout with ace terminal
-- peers/download buffering
-    - total downloaded becomes 0 at some point?! formatting issue or acestream fault?
+- timeout for ace config + disable restart on video timeout?
+- no restart on timeout? will tvheadend restart?
+-  pi.EventDecoder : Unknown event received: INFO 1;Cannot find active peers
 - play certain files from torrent with multiple files?
   LoadAsync and then return m3u instead of octet/stream?
--  pi.EventDecoder : Unknown event received: INFO 1;Cannot find active peers
 - adult channels, is there any request for user data (getuserdata)?
 - print help for urls
 - send SETOPTIONS use_stop_notifications=1 ???
