@@ -27,6 +27,7 @@ jar {
 
 shadowJar {
     exclude '*.txt'
+    exclude 'logback-test.xml'
 }
 
 dependencies {
