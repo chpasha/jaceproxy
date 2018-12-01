@@ -1,10 +1,33 @@
+An exception java.util.NoSuchElementException: de.tschudnowsky.jaceproxy.acestream_api.handlers.StopOrShutdown
+        at io.netty.channel.DefaultChannelPipeline.getContextOrDie(DefaultChannelPipeline.java:1137)
+        at io.netty.channel.DefaultChannelPipeline.remove(DefaultChannelPipeline.java:457)
+        at de.tschudnowsky.jaceproxy.acestream_api.handlers.Start.onReadTimeoutWhileStreaming(Start.java:115)
+        at de.tschudnowsky.jaceproxy.acestream_api.handlers.VideoStream.exceptionCaught(VideoStream.java:112)
+        at io.netty.channel.AbstractChannelHandlerContext.invokeExceptionCaught(AbstractChannelHandlerContext.java:285)
+        at io.netty.channel.AbstractChannelHandlerContext.invokeExceptionCaught(AbstractChannelHandlerContext.java:264)
+        at io.netty.channel.AbstractChannelHandlerContext.fireExceptionCaught(AbstractChannelHandlerContext.java:256)
+        at io.netty.handler.timeout.ReadTimeoutHandler.readTimedOut(ReadTimeoutHandler.java:98)
+        at io.netty.handler.timeout.ReadTimeoutHandler.channelIdle(ReadTimeoutHandler.java:90)
+        at io.netty.handler.timeout.IdleStateHandler$ReaderIdleTimeoutTask.run(IdleStateHandler.java:494)
+        at io.netty.handler.timeout.IdleStateHandler$AbstractIdleTask.run(IdleStateHandler.java:466)
+        at io.netty.util.concurrent.PromiseTask$RunnableAdapter.call(PromiseTask.java:38)
+        at io.netty.util.concurrent.ScheduledFutureTask.run(ScheduledFutureTask.java:127)
+        at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:163)
+        at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:404)
+        at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:462)
+        at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:897)
+        at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+        at java.lang.Thread.run(Thread.java:748)
+
+
 - shorten thread name in log
+- timeout after start command - ace doesn't respond and tvheadend tries again. we need general timeout with ace terminal
 - peers/download buffering
     - total downloaded becomes 0 at some point?! formatting issue or acestream fault?
 - play certain files from torrent with multiple files?
   LoadAsync and then return m3u instead of octet/stream?
-- timeout on waiting for stream from ace
-  + Unknown event received: INFO 1;Cannot find active peers
+-  pi.EventDecoder : Unknown event received: INFO 1;Cannot find active peers
+- adult channels, is there any request for user data (getuserdata)?
 - print help for urls
 - send SETOPTIONS use_stop_notifications=1 ???
 - memory usage, any flaws? (- maybe ignore useless events, why instantiate classes and map properteis for smth like livepos?)

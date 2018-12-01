@@ -44,8 +44,8 @@ public class JAceConfig {
     @CommandLine.Option(names = {"--port"}, description = "Proxy port, default 8000")
     private Integer port = 8000;
 
-    @CommandLine.Option(names = {"--timeout"}, description = "Timeout in seconds when there is no inbound traffic, default 30sec.")
-    private Integer timeout = 30;
+    @CommandLine.Option(names = {"--timeout"}, description = "Timeout in seconds when there is no inbound traffic, default 45sec.")
+    private Integer timeout = 45;
 
     @CommandLine.Option(names = {"--restart-on-timeout"}, description = "Should broadcast restart on timeout, default true")
     private Boolean restartOnTimeout = true;
