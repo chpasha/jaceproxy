@@ -1,4 +1,3 @@
-- shorten thread name in log
 - no timeout? will tvheadend restart?
 - timeout after start command - ace doesn't respond and tvheadend tries again. we need general timeout with ace terminal
 - peers/download buffering

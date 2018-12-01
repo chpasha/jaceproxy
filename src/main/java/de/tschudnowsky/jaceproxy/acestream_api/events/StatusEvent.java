@@ -38,14 +38,16 @@ public class StatusEvent extends EventImpl {
     @Nullable
     public String getDescription() {
         String[] segments = status.split(";");
-        switch (segments[0]) {
+        String status = segments[0];
+        switch (status) {
             case "main:buf":
                 return buffering(ArrayUtils.subarray(segments, 1, segments.length));
             case "main:dl":
                 return downloading(ArrayUtils.subarray(segments, 1, segments.length));
+            default:
+                return status;
 
         }
-        return null;
     }
 
     private String buffering(String[] segments) {
