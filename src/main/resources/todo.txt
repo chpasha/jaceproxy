@@ -1,4 +1,4 @@
-- timeout for ace config + disable restart on video timeout?
+- disable restart on video timeout?
 - no restart on timeout? will tvheadend restart?
 -  pi.EventDecoder : Unknown event received: INFO 1;Cannot find active peers
 - play certain files from torrent with multiple files?

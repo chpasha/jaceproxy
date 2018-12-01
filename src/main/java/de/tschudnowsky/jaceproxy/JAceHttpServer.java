@@ -135,7 +135,7 @@ public class JAceHttpServer {
     private static Appender<ILoggingEvent> addFileAppender(LoggerContext lc) {
         PatternLayoutEncoder ple = new PatternLayoutEncoder();
 
-        ple.setPattern("%d{yyyy-MM-dd HH:mm:ss} %5p [%5.5t] %X{FILENAME} %-15.15logger{39} : %m%n");
+        ple.setPattern("%d{yyyy-MM-dd HH:mm:ss} %5p [%5.5t] %X{FILENAME} %-25.25logger{0} : %m%n");
         ple.setContext(lc);
         ple.start();
         RollingFileAppender<ILoggingEvent> fileAppender = new RollingFileAppender<>();

@@ -8,7 +8,7 @@
                     converterClass="de.tschudnowsky.jaceproxy.log.ExtendedWhitespaceThrowableProxyConverter"/>
 
     <property name="CONSOLE_LOG_PATTERN"
-              value="${CONSOLE_LOG_PATTERN:-%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr([%5.5t]){faint} %clr(%X{FILENAME}){yellow} %clr(%-10.10logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"/>
+              value="${CONSOLE_LOG_PATTERN:-%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr([%5.5t]){faint} %clr(%X{FILENAME}){yellow} %clr(%-25.25logger{0}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"/>
 
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
