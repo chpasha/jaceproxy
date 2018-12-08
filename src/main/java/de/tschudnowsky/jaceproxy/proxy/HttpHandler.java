@@ -8,7 +8,10 @@ import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncInfohashCommand
 import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncTorrentCommand;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.LastHttpContent;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,9 +20,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 
 import static io.netty.buffer.Unpooled.copiedBuffer;
-import static io.netty.handler.codec.http.HttpHeaderNames.TRANSFER_ENCODING;
-import static io.netty.handler.codec.http.HttpHeaderValues.*;
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
@@ -36,7 +36,6 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, HttpRequest request) throws Exception {
         command = createLoadCommandFromRequest(request.uri());
-        sendHttpResponse(ctx);
         spawnAceStreamConnection(ctx.channel());
     }
 
@@ -74,18 +73,6 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
             log.error("Error parsing file index", e);
             return null;
         }
-    }
-
-    private void sendHttpResponse(ChannelHandlerContext ctx) {
-        //TODO maybe if we ever support torrents with multiple files, we have to return m3u instead after loadasync
-        //but check if tvheadend can wait until then - it stopped listening when we were returning http response
-        //too late
-        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        response.headers().set(TRANSFER_ENCODING, CHUNKED);
-        response.headers().set(HttpHeaderNames.CONNECTION, KEEP_ALIVE);
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
-        response.headers().set(HttpHeaderNames.ACCEPT_RANGES, BYTES);
-        ctx.writeAndFlush(response);
     }
 
     private void spawnAceStreamConnection(Channel inboundChannel) {

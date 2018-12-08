@@ -64,10 +64,12 @@ public class LoadAsyncResponseEventMapper implements EventMapper<LoadAsyncRespon
     private List<LoadAsyncResponseEvent.TransportFile> toFiles(@Nullable JSONArray files) throws UnsupportedEncodingException {
         if (files != null && !files.isEmpty()) {
             List<LoadAsyncResponseEvent.TransportFile> result = new ArrayList<>();
+            int idx = 0;
             for (Object file : files) {
                 JSONArray array = (JSONArray) file;
                 result.add(LoadAsyncResponseEvent.TransportFile
                         .builder()
+                        .index(idx++)
                         .filename(URLDecoder.decode((String) array.get(0), "UTF-8"))
                         .streamId((Integer) array.get(1))
                         .build()

@@ -84,11 +84,6 @@ public class JAceHttpServer {
     }
 
     @Synchronized
-    public static ChannelGroup getOrCreateChannelGroup(@NonNull String infohash) {
-        return getOrCreateChannelGroup(infohash, null);
-    }
-
-    @Synchronized
     public static ChannelGroup getOrCreateChannelGroup(@NonNull String infohash, @Nullable String name) {
         ChannelGroup group = inboundChannelsByHash.get(infohash);
         if (group == null) {

@@ -3,6 +3,8 @@ package de.tschudnowsky.jaceproxy.acestream_api.events;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.apache.commons.lang3.ObjectUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -35,9 +37,15 @@ public class LoadAsyncResponseEvent extends EventImpl {
 
     @Data
     @Builder
-    public static class TransportFile {
+    public static class TransportFile implements Comparable<TransportFile> {
         private String filename;
         private int streamId;
+        private int index;
+
+        @Override
+        public int compareTo(@NotNull LoadAsyncResponseEvent.TransportFile o) {
+            return ObjectUtils.compare(getFilename(), o.getFilename());
+        }
     }
 
     public enum TransportFileContentDescription {
