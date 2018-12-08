@@ -9,6 +9,8 @@ import de.tschudnowsky.jaceproxy.acestream_api.events.StopEvent;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,7 +23,7 @@ import java.util.Objects;
  */
 @Slf4j
 @RequiredArgsConstructor
-public class Stop extends SimpleChannelInboundHandler<Event> {
+public class Stop extends SimpleChannelInboundHandler<Event> implements GenericFutureListener<Future<Void>> {
 
     private final ChannelGroup playerChannelGroup;
     private boolean isRemovedFromPipeline;
@@ -29,18 +31,23 @@ public class Stop extends SimpleChannelInboundHandler<Event> {
     //if we initiate shutdown, we'll get Shutdown-Event as answer and have to ignore it
     //otherwise we should really shutdown
     private boolean iDidNotInitiatedShutdown = true;
+    
+    private ChannelHandlerContext ctx;
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         super.handlerAdded(ctx);
 
-        playerChannelGroup.newCloseFuture().addListener(future -> onSomeClientsDisconnected(ctx));
+        this.ctx = ctx;
+        playerChannelGroup.newCloseFuture().removeListener(this);
+        playerChannelGroup.newCloseFuture().addListener(this);
     }
 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
         super.handlerRemoved(ctx);
 
+        playerChannelGroup.newCloseFuture().removeListener(this);
         isRemovedFromPipeline = true;
     }
 
@@ -74,7 +81,8 @@ public class Stop extends SimpleChannelInboundHandler<Event> {
         ctx.close().syncUninterruptibly();
     }
 
-    private void onSomeClientsDisconnected(ChannelHandlerContext ctx) {
+    @Override
+    public void operationComplete(Future<Void> future) {
         if (isRemovedFromPipeline) {
             return;
         }
@@ -88,9 +96,9 @@ public class Stop extends SimpleChannelInboundHandler<Event> {
             shutdownAceClient(ctx);
         } else {
             log.warn("Original client disconnected but channel group {} is not empty, continue work", playerChannelGroup.name());
-            playerChannelGroup.newCloseFuture().addListener(newFuture -> onSomeClientsDisconnected(ctx));
+            playerChannelGroup.newCloseFuture().removeListener(this);
+            playerChannelGroup.newCloseFuture().addListener(this);
         }
-
     }
 
     private void shutdownAceClient(ChannelHandlerContext ctx) {

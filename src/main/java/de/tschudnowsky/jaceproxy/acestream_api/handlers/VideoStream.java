@@ -26,6 +26,8 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.timeout.ReadTimeoutException;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
@@ -35,7 +37,7 @@ import org.jetbrains.annotations.NotNull;
  */
 @Sharable
 @Slf4j
-public class VideoStream extends SimpleChannelInboundHandler<HttpObject> {
+public class VideoStream extends SimpleChannelInboundHandler<HttpObject> implements GenericFutureListener<Future<Void>>  {
 
     private final ChannelGroup playerChannelGroup;
     private final Start startHandler;
@@ -43,14 +45,42 @@ public class VideoStream extends SimpleChannelInboundHandler<HttpObject> {
     //we should always notify clients on channel-deactivate unless we got timeout
     //in this case clients should wait for restart
     private boolean shouldCloseClients = true;
+    private ChannelHandlerContext ctx;
 
 
     VideoStream(@NotNull ChannelGroup playerChannelGroup, @NotNull Start startHandler) {
         super(false);
         this.startHandler = startHandler;
-        // We don't have to track the client channels for closed event since StopOrShutdown does just that
+        // We don't have to track the client channels for closed event since Stop does just that
         // When all clients are gone it will issue stop event and we will get LastHttpContent here
         this.playerChannelGroup = playerChannelGroup;
+    }
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        super.handlerAdded(ctx);
+
+        this.ctx = ctx;
+        playerChannelGroup.newCloseFuture().removeListener(this);
+        playerChannelGroup.newCloseFuture().addListener(this);
+    }
+
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+        super.handlerRemoved(ctx);
+
+        playerChannelGroup.newCloseFuture().removeListener(this);
+    }
+
+    @Override
+    public void operationComplete(Future<Void> future) {
+        if (playerChannelGroup.isEmpty()) {
+            shouldCloseClients = false;
+            ctx.close();
+        } else {
+            playerChannelGroup.newCloseFuture().removeListener(this);
+            playerChannelGroup.newCloseFuture().addListener(this);
+        }
     }
 
     @Override
@@ -99,7 +129,7 @@ public class VideoStream extends SimpleChannelInboundHandler<HttpObject> {
             ctx.close();
             msg.release();
         } else {
-            playerChannelGroup.writeAndFlush(msg);
+           playerChannelGroup.writeAndFlush(msg);
         }
     }
 
