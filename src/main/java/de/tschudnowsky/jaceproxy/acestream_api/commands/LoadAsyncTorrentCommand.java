@@ -2,6 +2,7 @@ package de.tschudnowsky.jaceproxy.acestream_api.commands;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * User: pavel
@@ -14,8 +15,8 @@ public class LoadAsyncTorrentCommand extends LoadAsyncCommand {
 
     private String torrentUrl;
 
-    public LoadAsyncTorrentCommand(String torrentUrl) {
-        super(Type.TORRENT);
+    public LoadAsyncTorrentCommand(String torrentUrl, @Nullable Integer fileIndex) {
+        super(Type.TORRENT, fileIndex);
         this.torrentUrl = torrentUrl;
     }
 }

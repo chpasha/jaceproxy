@@ -16,7 +16,6 @@
 package de.tschudnowsky.jaceproxy.acestream_api.handlers;
 
 import de.tschudnowsky.jaceproxy.JAceConfig;
-import de.tschudnowsky.jaceproxy.JAceHttpServer;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.StartCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.StopCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.events.Event;
@@ -46,16 +45,13 @@ public class Start extends SimpleChannelInboundHandler<Event> {
     private final StartCommand startCommand;
 
     @NonNull
-    private final Channel inboundChannel;
-
     private ChannelGroup playerChannelGroup;
 
     private ChannelHandlerContext ctx;
 
-    public Start(StartCommand startCommand, Channel inboundChannel, String infohash) {
+    public Start(@NonNull StartCommand startCommand, @NonNull ChannelGroup group) {
         this.startCommand = startCommand;
-        this.inboundChannel = inboundChannel;
-        this.playerChannelGroup = JAceHttpServer.getOrCreateChannelGroup(infohash);
+        this.playerChannelGroup = group;
     }
 
     @Override
@@ -82,7 +78,7 @@ public class Start extends SimpleChannelInboundHandler<Event> {
             int port = uri.getPort();
 
             Bootstrap b = new Bootstrap();
-            b.group(inboundChannel.eventLoop())
+            b.group(playerChannelGroup.iterator().next().eventLoop())
              .channel(ctx.channel().getClass())
              .handler(new ChannelInitializer<SocketChannel>() {
 

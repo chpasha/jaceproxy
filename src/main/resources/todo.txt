@@ -1,7 +1,8 @@
 - play certain files from torrent with multiple files?
   LoadAsync and then return m3u instead of octet/stream?
   but how tvheadend will react?
-- adult channels, is there any request for user data (getuserdata)?
+- if stopping torrent file, videostream doesn't get empty content and exits only on timeout. should we track clients?
+  like in StopHandler?
 - print help for urls
 - send SETOPTIONS use_stop_notifications=1 ???
 - memory usage - create memory dump and check most usages (e.g. lot of strings)

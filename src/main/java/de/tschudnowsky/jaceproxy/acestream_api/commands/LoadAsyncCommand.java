@@ -1,6 +1,7 @@
 package de.tschudnowsky.jaceproxy.acestream_api.commands;
 
 import lombok.*;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -20,12 +21,16 @@ public abstract class LoadAsyncCommand extends CommandImpl {
 
     private final Type type;
 
+    @Nullable
+    private Integer fileIndex;
+
     public enum Type {
         TORRENT, INFOHASH, RAW, PID
     }
 
-    LoadAsyncCommand(Type type) {
+    LoadAsyncCommand(Type type, @Nullable Integer fileIndex) {
         super("LOADASYNC");
         this.type = type;
+        this.fileIndex = fileIndex;
     }
 }

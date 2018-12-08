@@ -2,7 +2,10 @@ package de.tschudnowsky.jaceproxy.proxy;
 
 import de.tschudnowsky.jaceproxy.JAceConfig;
 import de.tschudnowsky.jaceproxy.acestream_api.AceStreamClientInitializer;
-import de.tschudnowsky.jaceproxy.acestream_api.commands.*;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncContentIDCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncInfohashCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncTorrentCommand;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
@@ -18,6 +21,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.netty.handler.codec.http.HttpHeaderValues.*;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
  * User: pavel
@@ -47,18 +51,29 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
         }
         String command = segments[1];
         String param = segments[2];
+        Integer fileIndex = segments.length > 3 ? toInt(segments[3]) : null;
         switch (command) {
             case "url":
             case "torrent":
                 String torrentUrl = URLDecoder.decode(param, "UTF-8");
-                return new LoadAsyncTorrentCommand(torrentUrl);
+                return new LoadAsyncTorrentCommand(torrentUrl, fileIndex);
             case "content_id":
             case "pid":
-                return new LoadAsyncContentIDCommand(param);
+                return new LoadAsyncContentIDCommand(param, fileIndex);
             case "infohash":
-                return new LoadAsyncInfohashCommand(param);
+                return new LoadAsyncInfohashCommand(param, fileIndex);
         }
         throw new IllegalArgumentException("Unsupported url " + url);
+    }
+
+    private Integer toInt(String value) {
+        try {
+            //file index should be 1-based, we deal with normal people, not programmers ;)
+            return isNotBlank(value) ? Integer.parseInt(value) - 1 : null;
+        } catch (NumberFormatException e) {
+            log.error("Error parsing file index", e);
+            return null;
+        }
     }
 
     private void sendHttpResponse(ChannelHandlerContext ctx) {

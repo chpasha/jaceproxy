@@ -33,8 +33,10 @@ import org.slf4j.MDC;
 
 import java.util.List;
 
+import static de.tschudnowsky.jaceproxy.acestream_api.events.LoadAsyncResponseEvent.TransportFileContentDescription.ONE_AUDIO_VIDEO;
 import static java.util.Collections.singletonList;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 
 /**
@@ -75,31 +77,49 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
         }
         log.info("{}", event);
         LoadAsyncResponseEvent responseEvent = (LoadAsyncResponseEvent) event;
-        if (isNotBlank(responseEvent.getResponse().getInfohash())) {
-            //TODO file index
-            String channelGroupName = responseEvent.getResponse().getFiles().get(0).getFilename();
-            ChannelGroup group = JAceHttpServer.getOrCreateChannelGroup(responseEvent.getResponse().getInfohash(), channelGroupName);
-            log.info("Adding channel {} to group {}", responseEvent.getResponse().getInfohash(), group.name());
-            group.add(inboundChannel);
-            // if it is not the first channel in group, than broadcast is already running, no need to start anything
-            if (group.size() > 1) {
-                ctx.close();
-                return;
-            }
+
+        if (responseEvent.getResponse().getStatus() == ONE_AUDIO_VIDEO || loadAsyncCommand.getFileIndex() != null) {
+            startSingleVideo(ctx, responseEvent);
+        } else {
+            //TODO send m3u
         }
-        StartCommand startCommand = createStartCommand(responseEvent.getResponse());
+    }
+
+    private void startSingleVideo(ChannelHandlerContext ctx, LoadAsyncResponseEvent responseEvent) {
+        int fileIndex = defaultIfNull(loadAsyncCommand.getFileIndex(), 0);
+        //control bounds
+        fileIndex = Math.min(fileIndex, responseEvent.getResponse().getFiles().size() - 1);
+        fileIndex = Math.max(0, fileIndex);
+
+        if (isBlank(responseEvent.getResponse().getInfohash())) {
+            log.error("I've got LoadAsyncResponse without Infohash: {}", responseEvent.getResponse());
+            exceptionCaught(ctx, new IllegalStateException("Infohash missing"));
+        }
+
+        String channelGroupName = responseEvent.getResponse().getFiles().get(fileIndex).getFilename();
+        ChannelGroup group = JAceHttpServer.getOrCreateChannelGroup(
+                responseEvent.getResponse().getInfohash() + "_" + fileIndex,
+                channelGroupName);
+        log.info("Adding channel {} to group {}", responseEvent.getResponse().getInfohash(), group.name());
+        group.add(inboundChannel);
+        // if it is not the first channel in group, than broadcast is already running, no need to start anything
+        if (group.size() > 1) {
+            ctx.close();
+            return;
+        }
+
+        StartCommand startCommand = createStartCommand(responseEvent.getResponse(), fileIndex);
         log.info("{}", startCommand);
-        ctx.pipeline().addLast(new Start(startCommand, inboundChannel, responseEvent.getResponse().getInfohash()));
+        ctx.pipeline().addLast(new Start(startCommand, group));
         ctx.pipeline().remove(this);
         ctx.fireChannelActive();
     }
 
     @NotNull
-    private StartCommand createStartCommand(LoadAsyncResponseEvent.Response loadAsyncResponse) {
-        //TODO file index
-        LoadAsyncResponseEvent.TransportFile transportFile = loadAsyncResponse.getFiles().get(0);
-        MDC.put("FILENAME", String.format("[%s]",transportFile.getFilename()));
-        List<Integer> fileIndexes = singletonList(0);
+    private StartCommand createStartCommand(LoadAsyncResponseEvent.Response loadAsyncResponse, int fileIndex) {
+        LoadAsyncResponseEvent.TransportFile transportFile = loadAsyncResponse.getFiles().get(fileIndex);
+        MDC.put("FILENAME", String.format("[%.15s]", transportFile.getFilename()));
+        List<Integer> fileIndexes = singletonList(fileIndex);
         // TODO I have a feeling - there is no point in any Start command except for StartInfohash since we always receive infohash
         // as LoadAsyncResponse - test if there are any exceptions
         if (loadAsyncResponse.getInfohash() != null) {
@@ -134,6 +154,10 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
         }
         if (event.getResponse().getStatus() == LoadAsyncResponseEvent.TransportFileContentDescription.ERROR_RETRIEVING) {
             log.error("AceEngine failed to load transport data");
+            return true;
+        }
+        if (event.getResponse().getStatus() == LoadAsyncResponseEvent.TransportFileContentDescription.NO_AUDI_VIDEO) {
+            log.error("Transport file doesn't contain any audio or video");
             return true;
         }
         return false;

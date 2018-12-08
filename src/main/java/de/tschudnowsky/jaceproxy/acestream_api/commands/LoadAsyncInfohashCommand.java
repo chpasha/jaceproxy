@@ -2,6 +2,7 @@ package de.tschudnowsky.jaceproxy.acestream_api.commands;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * User: pavel
@@ -14,10 +15,8 @@ public class LoadAsyncInfohashCommand extends LoadAsyncCommand {
 
     private String infohash;
 
-    public LoadAsyncInfohashCommand(String infohash) {
-        super(Type.INFOHASH);
+    public LoadAsyncInfohashCommand(String infohash, @Nullable Integer fileIndex) {
+        super(Type.INFOHASH, fileIndex);
         this.infohash = infohash;
     }
-
-
 }
