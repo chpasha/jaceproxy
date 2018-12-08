@@ -2,7 +2,10 @@ package de.tschudnowsky.jaceproxy.proxy;
 
 import de.tschudnowsky.jaceproxy.JAceConfig;
 import de.tschudnowsky.jaceproxy.acestream_api.AceStreamClientInitializer;
-import de.tschudnowsky.jaceproxy.acestream_api.commands.*;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncContentIDCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncInfohashCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncTorrentCommand;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
@@ -69,7 +72,6 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
         response.headers().set(TRANSFER_ENCODING, CHUNKED);
         response.headers().set(HttpHeaderNames.CONNECTION, KEEP_ALIVE);
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
-        response.headers().set(HttpHeaderNames.ACCEPT_RANGES, BYTES);
         ctx.writeAndFlush(response);
     }
 
