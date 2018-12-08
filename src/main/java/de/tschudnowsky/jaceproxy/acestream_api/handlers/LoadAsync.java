@@ -103,7 +103,6 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
         response.headers().set(TRANSFER_ENCODING, CHUNKED);
         response.headers().set(HttpHeaderNames.CONNECTION, KEEP_ALIVE);
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
-        response.headers().set(HttpHeaderNames.ACCEPT_RANGES, BYTES);
         inboundChannel.writeAndFlush(response);
     }
 
