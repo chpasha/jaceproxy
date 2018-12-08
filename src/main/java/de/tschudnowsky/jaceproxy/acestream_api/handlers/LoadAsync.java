@@ -144,7 +144,7 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
                  .forEach(file -> {
 
             m3u.append(String.format("#EXTINF:-1, %s\n", file.getFilename()));
-            m3u.append(String.format("http://127.0.0.1:8000/infohash/%s/%s\n", loadAsync.getInfohash(), file.getIndex()));
+            m3u.append(String.format("http://127.0.0.1:8000/infohash/%s/%s\n", loadAsync.getInfohash(), file.getIndex() + 1/*Human readable*/));
 
         });
         String content = m3u.toString();
