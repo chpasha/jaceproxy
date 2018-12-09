@@ -17,9 +17,7 @@ package de.tschudnowsky.jaceproxy.acestream_api.handlers;
 
 import de.tschudnowsky.jaceproxy.JAceConfig;
 import de.tschudnowsky.jaceproxy.JAceHttpServer;
-import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncCommand;
-import de.tschudnowsky.jaceproxy.acestream_api.commands.StartCommand;
-import de.tschudnowsky.jaceproxy.acestream_api.commands.StartInfohashCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.*;
 import de.tschudnowsky.jaceproxy.acestream_api.events.Event;
 import de.tschudnowsky.jaceproxy.acestream_api.events.LoadAsyncResponseEvent;
 import de.tschudnowsky.jaceproxy.acestream_api.events.StatusEvent;
@@ -51,7 +49,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
-import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 
 /**
@@ -116,15 +114,16 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
         fileIndex = Math.min(fileIndex, responseEvent.getResponse().getFiles().size() - 1);
         fileIndex = Math.max(0, fileIndex);
 
-        if (isBlank(responseEvent.getResponse().getInfohash())) {
-            log.error("I've got LoadAsyncResponse without Infohash: {}", responseEvent.getResponse());
-            exceptionCaught(ctx, new IllegalStateException("Infohash missing"));
-        }
 
+        String uniqueChannelGroupId = null;
+        if (isNotBlank(responseEvent.getResponse().getInfohash())) {
+            uniqueChannelGroupId = responseEvent.getResponse().getInfohash() + "_" + fileIndex;
+        } else {
+            //TODO check if checksum is always there
+            uniqueChannelGroupId = responseEvent.getResponse().getChecksum() + "_" + fileIndex;
+        }
         String channelGroupName = responseEvent.getResponse().getFiles().get(fileIndex).getFilename();
-        ChannelGroup group = JAceHttpServer.getOrCreateChannelGroup(
-                responseEvent.getResponse().getInfohash() + "_" + fileIndex,
-                channelGroupName);
+        ChannelGroup group = JAceHttpServer.getOrCreateChannelGroup(uniqueChannelGroupId, channelGroupName);
         log.info("Adding channel {} to group {}", responseEvent.getResponse().getInfohash(), group.name());
         group.add(inboundChannel);
         // if it is not the first channel in group, than broadcast is already running, no need to start anything
@@ -148,12 +147,12 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
                  .sorted()
                  .forEach(file -> {
 
-            m3u.append(String.format("#EXTINF:-1, %s\n", file.getFilename()));
-            m3u.append(String.format("http://%s:%s/infohash/%s/%s\n",
-                    host, JAceConfig.INSTANCE.getPort(),
-                    loadAsync.getInfohash(), file.getIndex() + 1/*Human readable*/));
+                     m3u.append(String.format("#EXTINF:-1, %s\n", file.getFilename()));
+                     m3u.append(String.format("http://%s:%s/infohash/%s/%s\n",
+                             host, JAceConfig.INSTANCE.getPort(),
+                             loadAsync.getInfohash(), file.getIndex() + 1/*Human readable*/));
 
-        });
+                 });
         String content = m3u.toString();
         int contentLength = ByteBufUtil.utf8Bytes(content);
         ByteBuf buffer = Unpooled.buffer(contentLength);
@@ -170,14 +169,14 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
     @NotNull
     private StartCommand createStartCommand(LoadAsyncResponseEvent.Response loadAsyncResponse, int fileIndex) {
         LoadAsyncResponseEvent.TransportFile transportFile = loadAsyncResponse.getFiles().get(fileIndex);
-        MDC.put("FILENAME", String.format("[%.15s]", transportFile.getFilename()));
+        MDC.put("FILENAME", transportFile.getFilename());
         List<Integer> fileIndexes = singletonList(fileIndex);
         // TODO I have a feeling - there is no point in any Start command except for StartInfohash since we always receive infohash
-        // as LoadAsyncResponse - test if there are any exceptions
+        // as LoadAsyncResponse - test if there are any exceptions, for instance local files?
         if (loadAsyncResponse.getInfohash() != null) {
             return new StartInfohashCommand(loadAsyncResponse.getInfohash(), fileIndexes);
         }
-        /*switch (loadAsyncCommand.getType()) {
+        switch (loadAsyncCommand.getType()) {
             case TORRENT:
                 return new StartTorrentCommand(((LoadAsyncTorrentCommand) loadAsyncCommand).getTorrentUrl(), fileIndexes, transportFile.getStreamId());
             case INFOHASH:
@@ -186,7 +185,7 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
                 return new StartRawCommand(((LoadAsyncRawTransportFileCommand) loadAsyncCommand).getTransportFileAsBase64(), fileIndexes);
             case PID:
                 return new StartPidCommand(((LoadAsyncContentIDCommand) loadAsyncCommand).getContentId(), fileIndexes);
-        }*/
+        }
         throw new IllegalArgumentException(loadAsyncCommand.getClass().getSimpleName() + " is not supported yet");
     }
 
