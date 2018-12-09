@@ -15,8 +15,11 @@
  */
 package de.tschudnowsky.jaceproxy.acestream_api.handlers;
 
+import de.tschudnowsky.jaceproxy.JAceConfig;
 import de.tschudnowsky.jaceproxy.JAceHttpServer;
-import de.tschudnowsky.jaceproxy.acestream_api.commands.*;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.LoadAsyncCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.StartCommand;
+import de.tschudnowsky.jaceproxy.acestream_api.commands.StartInfohashCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.events.Event;
 import de.tschudnowsky.jaceproxy.acestream_api.events.LoadAsyncResponseEvent;
 import de.tschudnowsky.jaceproxy.acestream_api.events.StatusEvent;
@@ -38,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.MDC;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 
 import static de.tschudnowsky.jaceproxy.acestream_api.events.LoadAsyncResponseEvent.TransportFileContentDescription.ONE_AUDIO_VIDEO;
@@ -137,6 +141,7 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
     }
 
     private void sendHttpResponseForMultipleVideos(LoadAsyncResponseEvent.Response loadAsync) {
+        String host = ((InetSocketAddress) inboundChannel.localAddress()).getAddress().getHostAddress();
         StringBuilder m3u = new StringBuilder("#EXTM3U\n");
         loadAsync.getFiles()
                  .stream()
@@ -144,7 +149,9 @@ public class LoadAsync extends SimpleChannelInboundHandler<Event> {
                  .forEach(file -> {
 
             m3u.append(String.format("#EXTINF:-1, %s\n", file.getFilename()));
-            m3u.append(String.format("http://127.0.0.1:8000/infohash/%s/%s\n", loadAsync.getInfohash(), file.getIndex() + 1/*Human readable*/));
+            m3u.append(String.format("http://%s:%s/infohash/%s/%s\n",
+                    host, JAceConfig.INSTANCE.getPort(),
+                    loadAsync.getInfohash(), file.getIndex() + 1/*Human readable*/));
 
         });
         String content = m3u.toString();
