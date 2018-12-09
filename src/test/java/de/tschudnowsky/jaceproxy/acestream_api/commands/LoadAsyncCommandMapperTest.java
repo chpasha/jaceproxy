@@ -17,23 +17,23 @@ public class LoadAsyncCommandMapperTest extends CommandMapperTest {
     public void testWriteAsString() {
 
         String contentId = UUID.randomUUID().toString();
-        LoadAsyncCommand command = new LoadAsyncContentIDCommand(contentId);
+        LoadAsyncCommand command = new LoadAsyncContentIDCommand(contentId, null);
 
         CharSequence result = writeAsString(command);
         assertEquals(result, String.format("LOADASYNC %s PID %s", command.getRequestId(), contentId));
 
         String infohash = UUID.randomUUID().toString();
-        command = new LoadAsyncInfohashCommand(infohash);
+        command = new LoadAsyncInfohashCommand(infohash, null);
         result = writeAsString(command);
         assertEquals(result, String.format("LOADASYNC %s INFOHASH %s 0 0 0", command.getRequestId(), infohash));
 
         String rawContent = UUID.randomUUID().toString();
-        command = new LoadAsyncRawTransportFileCommand(rawContent);
+        command = new LoadAsyncRawTransportFileCommand(rawContent, null);
         result = writeAsString(command);
         assertEquals(result, String.format("LOADASYNC %s RAW %s 0 0 0", command.getRequestId(), rawContent));
 
         String torrentUrl = "http://google.com";
-        command = new LoadAsyncTorrentCommand(torrentUrl);
+        command = new LoadAsyncTorrentCommand(torrentUrl, null);
         result = writeAsString(command);
         assertEquals(result, String.format("LOADASYNC %s TORRENT %s 0 0 0", command.getRequestId(), torrentUrl));
     }
