@@ -51,3 +51,7 @@ dependencies {
     testCompile group: 'org.assertj', name: 'assertj-core', version: '3.11.1'
 
 }
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.8'
+}
