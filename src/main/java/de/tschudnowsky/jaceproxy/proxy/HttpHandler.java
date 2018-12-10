@@ -70,7 +70,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<HttpRequest> {
             //file index should be 1-based, we deal with normal people, not programmers ;)
             return isNotBlank(value) ? Integer.parseInt(value) - 1 : null;
         } catch (NumberFormatException e) {
-            log.error("Error parsing file index", e);
+            log.warn("Error parsing file index from {}", value);
             return null;
         }
     }
