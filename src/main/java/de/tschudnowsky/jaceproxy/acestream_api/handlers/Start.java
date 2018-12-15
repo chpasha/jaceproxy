@@ -15,7 +15,6 @@
  */
 package de.tschudnowsky.jaceproxy.acestream_api.handlers;
 
-import de.tschudnowsky.jaceproxy.JAceConfig;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.StartCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.commands.StopCommand;
 import de.tschudnowsky.jaceproxy.acestream_api.events.Event;
@@ -26,12 +25,12 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
-import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.internal.SocketUtils;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 
 
 /**
@@ -66,51 +65,75 @@ public class Start extends SimpleChannelInboundHandler<Event> {
         this.ctx = ctx; //TODO is it ok to store context? theoretically there is only 1 Start instance per broadcast
         if (event instanceof StartPlayEvent) {
             StartPlayEvent startPlay = (StartPlayEvent) event;
-            streamUrl(ctx, startPlay.getUrl());
+
+            if (startPlay.getUrl().contains("m3u")) {
+                streamPlaylist(ctx, startPlay.getUrl());
+            } else {
+                streamUrl(ctx, startPlay.getUrl());
+            }
+        }
+    }
+
+    /*
+       Sometimes we get m3u hls as response instead of video stream url, so we have to stream it entry by entry
+     */
+    private void streamPlaylist(ChannelHandlerContext ctx, String url) {
+        try {
+            Bootstrap b = new Bootstrap();
+            b.group(playerChannelGroup.iterator().next().eventLoop())
+             .channel(ctx.channel().getClass())
+             .handler(new ChannelInitializer<SocketChannel>() {
+                 @Override
+                 protected void initChannel(SocketChannel ch)  {
+                     ch.pipeline()
+                       .addLast(new HttpClientCodec())
+                       .addLast(HttpResponseLogger.INSTANCE)
+                       .addLast(new PlaylistStream(playerChannelGroup, Start.this));
+                 }
+             });
+
+            sendGET(b, url);
+        } catch (URISyntaxException e) {
+            log.error("", e);
         }
     }
 
     private void streamUrl(ChannelHandlerContext ctx, String url) {
         try {
 
-            URI uri = new URI(url);
-            String host = uri.getHost();
-            int port = uri.getPort();
-
             Bootstrap b = new Bootstrap();
             b.group(playerChannelGroup.iterator().next().eventLoop())
              .channel(ctx.channel().getClass())
-             .handler(new ChannelInitializer<SocketChannel>() {
-
-                 @Override
-                 protected void initChannel(SocketChannel ch) {
-                     ChannelPipeline pipeline = ch.pipeline();
-                     pipeline.addLast(new HttpClientCodec())
-                             .addLast(new ReadTimeoutHandler(JAceConfig.INSTANCE.getStreamTimeout()))
-                             .addLast(new VideoStream(playerChannelGroup, Start.this));
-                 }
-             });
-            ChannelFuture streamChannel = b.connect(SocketUtils.socketAddress(host, port));
-            streamChannel.addListener((ChannelFutureListener) future -> {
-                if (future.isSuccess()) {
-                    HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, uri.getPath());
-                    streamChannel.channel().writeAndFlush(request);
-                } else {
-                    streamChannel.channel().close();
-                    log.error("Failed to download {}", uri.toString());
-                }
-            });
+             .handler(new HttpStreamInitializer(new VideoStream(playerChannelGroup, Start.this)));
+            sendGET(b, url);
 
         } catch (Exception e) {
             log.error("", e);
         }
     }
 
+    private void sendGET(Bootstrap b, String url) throws URISyntaxException {
+        URI uri = new URI(url);
+        String host = uri.getHost();
+        int port = uri.getPort();
+        ChannelFuture streamChannel = b.connect(SocketUtils.socketAddress(host, port));
+        streamChannel.addListener((ChannelFutureListener) future -> {
+            if (future.isSuccess()) {
+                HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, uri.getPath());
+                streamChannel.channel().writeAndFlush(request);
+            } else {
+                streamChannel.channel().close();
+                log.error("Failed to download {}", uri.toString());
+            }
+        });
+    }
+
     synchronized void onReadTimeoutWhileStreaming() {
         log.info("Restarting broadcast");
         Stop stopOrShutdown = ctx.pipeline().get(Stop.class);
-        if (stopOrShutdown != null)
+        if (stopOrShutdown != null) {
             ctx.pipeline().remove(stopOrShutdown);
+        }
         ctx.writeAndFlush(new StopCommand());
         this.channelActive(ctx);
     }

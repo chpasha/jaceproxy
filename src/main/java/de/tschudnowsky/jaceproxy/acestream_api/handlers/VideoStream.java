@@ -37,10 +37,11 @@ import org.jetbrains.annotations.NotNull;
  */
 @Sharable
 @Slf4j
-public class VideoStream extends SimpleChannelInboundHandler<HttpObject> implements GenericFutureListener<Future<Void>>  {
+public class VideoStream extends SimpleChannelInboundHandler<HttpObject> implements GenericFutureListener<Future<Void>> {
 
-    private final ChannelGroup playerChannelGroup;
+    private final ChannelGroup clients;
     private final Start startHandler;
+    private final boolean sendLastHttpContentToClients; //we should not send LastHttp while streaming hls
 
     //we should always notify clients on channel-deactivate unless we got timeout
     //in this case clients should wait for restart
@@ -48,12 +49,15 @@ public class VideoStream extends SimpleChannelInboundHandler<HttpObject> impleme
     private ChannelHandlerContext ctx;
 
 
-    VideoStream(@NotNull ChannelGroup playerChannelGroup, @NotNull Start startHandler) {
+    VideoStream(@NotNull ChannelGroup clients, @NotNull Start startHandler) {
+        this(clients, startHandler, true);
+    }
+
+    VideoStream(@NotNull ChannelGroup clients, @NotNull Start startHandler, boolean sendLastHttpContentToClients) {
         super(false);
         this.startHandler = startHandler;
-        // We don't have to track the client channels for closed event since Stop does just that
-        // When all clients are gone it will issue stop event and we will get LastHttpContent here
-        this.playerChannelGroup = playerChannelGroup;
+        this.clients = clients;
+        this.sendLastHttpContentToClients = sendLastHttpContentToClients;
     }
 
     @Override
@@ -61,25 +65,25 @@ public class VideoStream extends SimpleChannelInboundHandler<HttpObject> impleme
         super.handlerAdded(ctx);
 
         this.ctx = ctx;
-        playerChannelGroup.newCloseFuture().removeListener(this);
-        playerChannelGroup.newCloseFuture().addListener(this);
+        clients.newCloseFuture().removeListener(this);
+        clients.newCloseFuture().addListener(this);
     }
 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
         super.handlerRemoved(ctx);
 
-        playerChannelGroup.newCloseFuture().removeListener(this);
+        clients.newCloseFuture().removeListener(this);
     }
 
     @Override
     public void operationComplete(Future<Void> future) {
-        if (playerChannelGroup.isEmpty()) {
+        if (clients.isEmpty()) {
             shouldCloseClients = false;
             ctx.close();
         } else {
-            playerChannelGroup.newCloseFuture().removeListener(this);
-            playerChannelGroup.newCloseFuture().addListener(this);
+            clients.newCloseFuture().removeListener(this);
+            clients.newCloseFuture().addListener(this);
         }
     }
 
@@ -90,46 +94,33 @@ public class VideoStream extends SimpleChannelInboundHandler<HttpObject> impleme
         log.info("Acestream closed connection, stopping download");
         if (shouldCloseClients) {
             log.info("Notifying clients of streaming end");
-            playerChannelGroup.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+            clients.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
         }
         ctx.close();
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, HttpObject msg)  {
+    public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
         if (msg instanceof HttpResponse) {
-            logHttpResponse((HttpResponse) msg);
+            ReferenceCountUtil.release(msg);
         }
         if (msg instanceof HttpContent) {
             streamHttpContent((HttpContent) msg, ctx);
         }
     }
 
-    private void logHttpResponse(HttpResponse msg) {
-        try {
-            log.debug("STATUS: {}", msg.status());
-            log.debug("VERSION: {}", msg.protocolVersion());
-            if (!msg.headers().isEmpty()) {
-                for (CharSequence name : msg.headers().names()) {
-                    for (CharSequence value : msg.headers().getAll(name)) {
-                        log.debug("HEADER: {} = {}", name, value);
-                    }
-                }
-            }
-        } finally {
-            ReferenceCountUtil.release(msg);
-        }
-    }
 
     private void streamHttpContent(HttpContent msg, ChannelHandlerContext ctx) {
         if (msg instanceof LastHttpContent) {
-            log.warn("Reached end of stream");
-            playerChannelGroup.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+            if (sendLastHttpContentToClients) {
+                log.warn("Reached end of stream");
+                clients.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+            }
             shouldCloseClients = false;
             ctx.close();
             msg.release();
         } else {
-           playerChannelGroup.writeAndFlush(msg);
+            clients.writeAndFlush(msg);
         }
     }
 
@@ -145,7 +136,7 @@ public class VideoStream extends SimpleChannelInboundHandler<HttpObject> impleme
             }
         } else {
             log.error("Streaming failed", cause);
-            playerChannelGroup.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+            clients.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
         }
         ctx.close();
     }
